@@ -1,0 +1,1396 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>진입대원 종합관제 시스템(EPICS) (안전점검관용)</title>
+<link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css" />
+<style>
+  :root{
+    --navy:#1B3A5F; --navy-2:#3E5F82; --navy-3:#6B87A5;
+    --teal:#0F6E56; --amber:#BA7517; --red:#A32D2D; --blue:#2F6FAE;
+    --bg:#F7F6F2; --card:#FFFFFF; --border:#E1DED4;
+    --text:#2C2C2A; --text-muted:#5F5E5A;
+  }
+  *{box-sizing:border-box;}
+  html{scroll-behavior:smooth;}
+  .quicknav{display:inline-flex;align-items:center;gap:4px;font-size:12px;font-weight:700;color:var(--navy);background:#EAF0F6;border:1px solid #C7D5E5;padding:6px 14px;border-radius:16px;text-decoration:none;margin-bottom:12px;}
+  .scrollTopBtn{position:fixed;right:16px;bottom:16px;width:44px;height:44px;border-radius:50%;background:rgba(27,58,95,0.55);color:rgba(255,255,255,0.9);display:flex;align-items:center;justify-content:center;font-size:18px;box-shadow:0 2px 8px rgba(0,0,0,0.2);z-index:60;text-decoration:none;border:1px solid rgba(255,255,255,0.4);backdrop-filter:blur(2px);}
+  .scrollLogBtn{bottom:66px;font-size:17px;}
+  .scrollParBtn{bottom:116px;font-size:12px;font-weight:800;letter-spacing:0.3px;background:rgba(163,45,45,0.6);}
+  .floatingParPanel{display:none;position:fixed;right:16px;bottom:166px;left:16px;max-width:480px;margin:0 auto;max-height:55vh;overflow-y:auto;background:#fff;border:1px solid var(--border);border-radius:12px;padding:14px;box-shadow:0 6px 24px rgba(0,0,0,0.3);z-index:70;}
+  .floatingParPanel.show{display:block;}
+  .stickyBar{position:static;background:var(--navy);color:#fff;padding:10px 14px;border-radius:10px;margin:0 0 12px;font-size:13px;font-weight:700;display:flex;justify-content:space-between;align-items:center;}
+  .stickyBar a{color:#fff;text-decoration:none;background:rgba(255,255,255,0.18);padding:6px 12px;border-radius:14px;font-size:12px;white-space:nowrap;}
+  body{margin:0;font-family:'Pretendard', -apple-system, BlinkMacSystemFont, sans-serif;background:var(--bg);color:var(--text);padding-bottom:40px;}
+  header{background:var(--navy);color:#fff;padding:16px 18px;}
+  header h1{margin:0;font-size:16px;font-weight:800;line-height:1.35;text-align:left;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .h1epics{font-weight:800;}
+  .h1sub{font-size:11.5px;font-weight:600;color:#C7D2DE;margin-top:4px;text-align:left;letter-spacing:0.2px;}
+  header p{margin:4px 0 0;font-size:12px;color:#C7D2DE;}
+  .syncdot{display:inline-block;width:7px;height:7px;border-radius:50%;margin-right:5px;background:#639922;}
+  .syncdot.bad{background:#A32D2D;}
+  .dateBar{background:#0F2A47;color:#fff;padding:10px 18px;display:flex;align-items:center;gap:10px;font-size:13px;}
+  .dateBar input{padding:6px 8px;border-radius:6px;border:none;font-family:inherit;font-size:13px;}
+  .dateBar #settingsToggle, .dateBar #soloEntryToggle{margin-left:0;background:rgba(255,255,255,0.15);border:none;color:#fff;width:30px;height:30px;border-radius:50%;font-size:15px;flex-shrink:0;}
+  .dateBar #soloEntryToggle{margin-left:auto;}
+  .wrap{max-width:520px;margin:0 auto;padding:16px;}
+  .section-title{font-size:13px;color:var(--text-muted);font-weight:700;margin:0 0 8px;}
+  .section-title.secondary{opacity:0.85;}
+  .sectionHeader{display:flex;flex-direction:column;align-items:center;margin:26px 0 14px;}
+  .sectionNavRow{display:flex;align-items:center;gap:14px;margin-bottom:6px;}
+  .sectionNavBtn{width:29px;height:29px;border-radius:9px;background:#F1F4F8;color:var(--text-muted);border:1px solid var(--border);display:flex;flex-direction:column;align-items:center;justify-content:center;line-height:1;text-decoration:none;flex-shrink:0;gap:1px;opacity:0.85;}
+  .sectionNavBtn .navNum{font-size:12px;font-weight:800;}
+  .sectionNavBtn .navArrow{font-size:11px;font-weight:800;opacity:0.85;}
+  .sectionNavBtn.spacer{visibility:hidden;}
+  .sectionNum{width:34px;height:34px;border-radius:50%;background:var(--navy);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:15px;margin-bottom:6px;}
+  .sectionTitleText{font-size:16px;font-weight:800;color:var(--navy);text-align:center;letter-spacing:-0.2px;}
+  .card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:14px;margin-bottom:16px;}
+  .card.secondary{border-style:dashed;}
+  .mode-row{display:flex;gap:8px;}
+  .mode-btn{flex:1;padding:12px 6px;border-radius:10px;border:2px solid var(--border);background:#fff;font-family:inherit;font-size:13px;font-weight:700;color:var(--text-muted);}
+  .mode-btn.active-in{border-color:var(--navy);background:#EAF0F6;color:var(--navy);}
+  .mode-btn.active-out{border-color:var(--teal);background:#E6F3EF;color:var(--teal);}
+  .mode-btn.tone-enter{border-color:var(--red);background:#FBEAEA;color:var(--red);}
+  .mode-btn.tone-exit{border-color:var(--blue);background:#E9F1FA;color:var(--blue);}
+  .field-label{font-size:11px;color:var(--text-muted);margin:10px 0 4px;}
+  .loc-row{display:flex;gap:8px;}
+  select{width:100%;padding:10px 8px;border-radius:8px;border:1px solid var(--border);font-family:inherit;font-size:14px;background:#fff;color:var(--text);}
+  input[type=text]{width:100%;padding:10px 8px;border-radius:8px;border:1px solid var(--border);font-family:inherit;font-size:14px;background:#fff;color:var(--text);}
+  .loc-row select{flex:1;}
+  .cam-box{position:relative;width:100%;aspect-ratio:1/1;background:#111;border-radius:12px;overflow:hidden;}
+  video{width:100%;height:100%;object-fit:cover;}
+  .cam-guide{position:absolute;top:15%;left:15%;right:15%;bottom:15%;border:3px solid rgba(255,255,255,0.7);border-radius:12px;pointer-events:none;}
+  .cam-status{position:absolute;bottom:10px;left:10px;right:10px;text-align:center;color:#fff;font-size:12px;background:rgba(0,0,0,0.4);border-radius:8px;padding:6px;}
+  .flash{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:800;color:#fff;background:rgba(163,45,45,0.9);opacity:0;transition:opacity .15s;text-align:center;padding:0 12px;}
+  .flash.out{background:rgba(47,111,174,0.9);}
+  .flash.show{opacity:1;}
+  .btn-secondary{margin-top:10px;width:100%;padding:10px;border-radius:8px;border:1px solid var(--border);background:#fff;font-family:inherit;font-size:13px;color:var(--navy);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .btn-primary{width:100%;padding:12px;border-radius:8px;border:none;background:var(--navy);color:#fff;font-family:inherit;font-size:14px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .note{font-size:12px;color:var(--text-muted);line-height:1.6;}
+  .status-grid{display:flex;gap:10px;margin-bottom:12px;}
+  .stat{flex:1;background:#F1F4F8;border-radius:10px;padding:10px 8px;text-align:center;}
+  .stat .num{font-size:22px;font-weight:800;color:var(--navy);}
+  .stat .label{font-size:11px;color:var(--text-muted);margin-top:2px;}
+  #statIn{color:var(--red);}
+  #statOut{color:var(--blue);}
+  #statWarn{color:var(--red);}
+  .badge{font-size:10px;padding:1px 6px;border-radius:6px;display:inline-block;margin-left:4px;}
+  .badge-warn{background:#FAEEDA;color:var(--amber);}
+  .badge-lead{background:#EAF0F6;color:var(--navy);font-weight:700;}
+  .badge-src-qr{background:#EAF0F6;color:var(--navy);}
+  .badge-src-manual{background:#EFEDE7;color:var(--text-muted);}
+  .airbar{height:6px;background:#EEE;border-radius:4px;overflow:hidden;margin-bottom:3px;}
+  .toggleBtn{width:100%;padding:8px 4px;border-radius:6px;border:1px solid var(--border);background:#fff;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .toggleBtn.btn-enter{color:var(--red);border-color:var(--red);}
+  .toggleBtn.btn-exit{color:var(--blue);border-color:var(--blue);}
+  .pickerSel{width:100%;padding:6px 6px;border-radius:6px;border:1px solid var(--border);font-family:inherit;font-size:12px;margin-bottom:5px;background:#fff;}
+  .pickerInput{width:100%;padding:6px 8px;border-radius:6px;border:1px solid var(--border);font-family:inherit;font-size:12px;margin-bottom:5px;background:#fff;color:var(--text);}
+  .emojiChip{display:inline-flex;align-items:center;justify-content:center;background:#fff;border-radius:50%;width:20px;height:20px;vertical-align:middle;margin-right:2px;}
+  .pickerBtnRow{display:flex;gap:6px;margin-bottom:5px;}
+  .pickerBtnRow button{flex:1;padding:7px 3px;border-radius:6px;font-size:11.5px;border:1px solid var(--border);background:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .pickerBtnRow .confirm.tone-enter-btn{background:var(--navy);border-color:var(--navy);color:#fff;}
+  .pickerBtnRow .confirm.tone-exit-btn{background:var(--navy);border-color:var(--navy);color:#fff;}
+  .pickerBtnRow .confirm.tone-move-btn{background:var(--navy-2);border-color:var(--navy-2);color:#fff;}
+  .airToggleBtn{flex:1;font-size:11px;padding:6px 2px;border-radius:6px;border:1px solid var(--border);background:#fff;color:var(--text-muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .airToggleBtn.active-in{border-color:var(--navy);background:#EAF0F6;color:var(--navy);}
+  .airToggleBtn.active-out{border-color:var(--teal);background:#E6F3EF;color:var(--teal);}
+  .empty{font-size:13px;color:var(--text-muted);text-align:center;padding:12px 0;}
+  .log-item{font-size:12px;padding:7px 0;border-bottom:1px solid var(--border);color:var(--text-muted);}
+  .log-item:last-child{border-bottom:none;}
+  .log-item b{color:var(--text);}
+  .log-item .logDesc{display:block;line-height:1.5;}
+  .log-item .logTime{display:block;text-align:right;margin-top:2px;color:var(--text-muted);font-size:11px;}
+  .demo-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:10px;}
+  .demo-card{text-align:center;background:#fafafa;border:1px solid var(--border);border-radius:8px;padding:8px 4px;}
+  .demo-card .qr{width:100%;display:flex;justify-content:center;}
+  .demo-card .name{font-size:11px;font-weight:700;margin-top:4px;}
+  .demo-card .sub{font-size:10px;color:var(--text-muted);}
+  .urlbox{width:100%;padding:8px;border-radius:8px;border:1px solid var(--border);font-size:12px;font-family:monospace;}
+  .hist-line{font-size:12px;color:var(--text-muted);margin-top:3px;line-height:1.5;}
+  .hist-line.enter-state{color:var(--red);font-weight:700;}
+  .hist-line.exit-state{color:var(--blue);}
+  .parGroup{margin-bottom:10px;}
+  .parGroupHead{font-size:12px;font-weight:700;color:var(--navy-2);margin-bottom:4px;}
+  .personRow{border:1px solid var(--border);border-radius:10px;padding:12px;margin-bottom:10px;}
+  .personRow .pname{font-weight:700;font-size:14px;}
+  .personRow .porg{font-size:11px;color:var(--text-muted);margin-top:2px;}
+  .toast{position:fixed;top:14px;left:50%;transform:translateX(-50%);background:var(--red);color:#fff;padding:10px 18px;border-radius:8px;font-size:13px;font-weight:700;z-index:999;opacity:0;transition:opacity .2s;pointer-events:none;max-width:90vw;text-align:center;}
+  .toast.show{opacity:1;}
+  .toast.out{background:var(--blue);}
+  .toast.move{background:var(--navy-2);}
+  button, .btn-primary, .btn-secondary, .toggleBtn, .pickerBtnRow button, .airToggleBtn, .quicknav, .scrollTopBtn, .orgChip{
+    transition: transform 0.08s ease, opacity 0.08s ease;
+  }
+  button:active, .btn-primary:active, .btn-secondary:active, .toggleBtn:active, .pickerBtnRow button:active, .airToggleBtn:active, .quicknav:active, .scrollTopBtn:active, .orgChip:active, a.btn-secondary:active{
+    transform: scale(0.95);
+    opacity: 0.75;
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>진입대원 종합관제 시스템 <span class="h1epics">EPICS</span></h1>
+  <div class="h1sub">안전점검관용</div>
+  <p><span class="syncdot" id="syncDot"></span><span id="syncText">동기화 대기 중</span></p>
+</header>
+<div class="dateBar">
+  상황(출동) 일자
+  <input type="date" id="incidentDateInput">
+  <button id="soloEntryToggle" title="1인 진입입력" aria-label="1인 진입입력">✍️</button>
+  <button id="settingsToggle" title="환경설정" aria-label="환경설정">⚙</button>
+</div>
+
+<div class="wrap">
+
+  <div id="settingsPanel" style="display:none;">
+    <div class="section-title">환경설정</div>
+    <div class="card">
+      <input type="text" id="apiUrlInput" class="urlbox" placeholder="Apps Script 웹앱 주소(.../exec)를 붙여넣으세요">
+      <button class="btn-secondary" id="saveUrlBtn">저장 후 동기화 시작</button>
+      <div class="field-label" style="margin-top:12px;">담당 안전점검관 표시 (선택 · 여러 안전점검관이 동시에 쓸 때 구분용)</div>
+      <input type="text" id="controllerTagInput" class="urlbox" placeholder="예: 서쪽구역-김점검관" style="font-family:inherit;">
+      <button class="btn-secondary" id="saveControllerTagBtn">저장</button>
+      <p class="note">대원 명단(소속·계급·성명)은 구글시트 roster 탭에서 관리됩니다. 연결 상태는 상단 점 색으로 항상 확인 가능합니다(초록=정상, 빨강/주황=확인 필요).</p>
+    </div>
+  </div>
+
+  <div id="soloEntryPanel" style="display:none;">
+    <div class="section-title">1인 진입입력 (예외 · 평소엔 아래 출동대 이용)</div>
+    <div class="card">
+      <div class="field-label">1) 소속</div>
+      <select id="manOrg"></select>
+      <div id="manPersonRow">
+        <div class="field-label">2) 계급 · 성명</div>
+        <select id="manPerson"></select>
+      </div>
+      <div id="manUnlistedRow" style="display:none;">
+        <div class="field-label">소속 (직접 입력 · 예외적으로 드문 경우)</div>
+        <input type="text" id="manUnlistedOrg" placeholder="예: OO소방서">
+        <div class="field-label" style="margin-top:8px;">계급</div>
+        <input type="text" id="manUnlistedRank" placeholder="예: 소방사">
+        <div class="field-label" style="margin-top:8px;">성명</div>
+        <input type="text" id="manUnlistedName" placeholder="예: 홍길동">
+      </div>
+      <div class="field-label">위치</div>
+      <div class="loc-row">
+        <select id="manFloor">
+          <option>지하2층</option><option>지하1층</option><option selected>지상1층</option><option>지상2층</option><option>지상3층</option><option>직접입력(수기)</option>
+        </select>
+        <select id="manZone">
+          <option selected>정문(북측)</option><option>동측 진입로</option><option>서측 진입로</option><option>남측 진입로</option><option>직접입력(수기)</option>
+        </select>
+      </div>
+      <div class="loc-row" id="manCustomRow" style="display:none;">
+        <input type="text" id="manFloorCustom" placeholder="층 직접 입력 (예: 지하4층, 옥상)">
+        <input type="text" id="manZoneCustom" placeholder="구역 직접 입력 (예: 동측 비상계단)">
+      </div>
+      <div class="field-label">공기통 용량</div>
+      <select id="manAirCap">
+        <option value="30">30분형</option>
+        <option value="40">40분형</option>
+        <option value="50" selected>50분형</option>
+      </select>
+      <div class="field-label">진입 시각 (추정)</div>
+      <select id="manTimeEst">
+        <option value="0" selected>지금</option>
+        <option value="5">약 5분 전</option>
+        <option value="10">약 10분 전</option>
+        <option value="15">약 15분 전</option>
+        <option value="20">약 20분 전</option>
+      </select>
+      <button class="btn-primary" id="manSubmit" style="margin-top:12px;">무전확인 · 진입 처리</button>
+      <a href="#sec3Top" class="quicknav" style="margin-top:10px;">실시간 현황으로 이동 ↓</a>
+      <p class="note" style="margin-top:8px;">공기통을 "이어서 사용"으로 처리해야 하면 이 폼 대신 아래 2번 표의 재진입처리 버튼을 쓰세요.</p>
+    </div>
+  </div>
+
+  <div class="sectionHeader" id="sec2Top"><div class="sectionNavRow"><a href="#sec4Top" class="sectionNavBtn"><span class="navNum">3</span><span class="navArrow">‹</span></a><div class="sectionNum">1</div><a href="#sec3Top" class="sectionNavBtn"><span class="navNum">2</span><span class="navArrow">›</span></a></div><div class="sectionTitleText">출동대(다중진입 선택)</div></div>
+  <div class="card">
+    <div id="stickyPendingBar"></div>
+    <div id="orgFilterChips" style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px;"></div>
+    <div id="pendingCandidates"></div>
+    <p class="note" style="margin-top:8px;">체크한 대원은 "대기중"으로 표시됩니다. 실제로 건물에 도착했을 때, 아래 3번 표의 "대기중" 칸에서 일괄 진입 처리를 누르면 그 순간 전원 동시에 진입 처리됩니다.</p>
+  </div>
+
+  <div class="sectionHeader" id="sec3Top"><div class="sectionNavRow"><a href="#sec2Top" class="sectionNavBtn"><span class="navNum">1</span><span class="navArrow">‹</span></a><div class="sectionNum">2</div><a href="#sec4Top" class="sectionNavBtn"><span class="navNum">3</span><span class="navArrow">›</span></a></div><div class="sectionTitleText">실시간 현황 (진입대원만 표시)</div></div>
+  <div class="card">
+    <div class="status-grid">
+      <div class="stat"><div class="num" id="statIn">0</div><div class="label">진입 중</div></div>
+      <div class="stat"><div class="num" id="statOut">0</div><div class="label">철수 완료</div></div>
+      <div class="stat"><div class="num" id="statWarn">0</div><div class="label">잔량 경고</div></div>
+    </div>
+    <button class="btn-secondary" id="bulkExitToggle" style="margin-top:8px;">👥 일괄철수 모드 (훈련 종료 등)</button>
+    <div id="bulkExitBlock"></div>
+    <span id="pendingAnchor"></span>
+    <div id="pendingBlock"></div>
+    <div id="statusList"></div>
+    <button class="btn-primary" id="parBtn" style="margin-top:4px;">전원점검(PAR) 요청 표시</button>
+    <div id="parPanel" style="margin-top:10px;"></div>
+  </div>
+
+  <div class="sectionHeader" id="sec4Top"><div class="sectionNavRow"><a href="#sec2Top" class="sectionNavBtn"><span class="navNum">1</span><span class="navArrow">‹</span></a><div class="sectionNum">3</div><a href="#sec3Top" class="sectionNavBtn"><span class="navNum">2</span><span class="navArrow">›</span></a></div><div class="sectionTitleText">처리 기록 (해당 일자, 최근 순)</div></div>
+  <div class="pickerBtnRow" style="margin-bottom:10px;">
+    <button class="btn-secondary" id="downloadLogDayBtn" style="margin-top:0;">📥 오늘 처리기록 내려받기</button>
+    <button class="btn-secondary" id="downloadLogAllBtn" style="margin-top:0;">📥 전체 처리기록 내려받기</button>
+  </div>
+  <div class="card" id="logCard"><div class="empty">기록 없음</div></div>
+
+</div>
+
+<div id="floatingParPanel" class="floatingParPanel"></div>
+<button class="scrollTopBtn scrollParBtn" id="floatingParBtn" title="PAR 신속 확인" aria-label="PAR 신속 확인">PAR</button>
+<a href="#sec4Top" class="scrollTopBtn scrollLogBtn" title="최신 기록으로" aria-label="최신 기록으로">📋</a>
+<a href="#" class="scrollTopBtn" title="맨 위로" aria-label="맨 위로">↑</a>
+
+<script>
+  function todayStr(){ return new Date().toISOString().slice(0,10); }
+  function strictEncode(str){
+    return encodeURIComponent(str).replace(/[!'()*]/g, c => '%' + c.charCodeAt(0).toString(16).toUpperCase());
+  }
+  document.getElementById('incidentDateInput').value = todayStr();
+  document.getElementById('settingsToggle').addEventListener('click', () => {
+    const panel = document.getElementById('settingsPanel');
+    panel.style.display = panel.style.display === 'none' ? 'block' : 'none';
+  });
+  document.getElementById('soloEntryToggle').addEventListener('click', () => {
+    const panel = document.getElementById('soloEntryPanel');
+    panel.style.display = panel.style.display === 'none' ? 'block' : 'none';
+  });
+
+  const DEMO_ROSTER = [
+    {id:'MP-001', org:'서장실', rank:'서장', name:'이달승', role:'서장'},
+    {id:'MP-002', org:'119구조대', rank:'소방경', name:'이광웅', role:'구조대장'},
+    {id:'MP-003', org:'119구조대', rank:'소방위', name:'양현우', role:'부대장'},
+    {id:'MP-004', org:'119구조대', rank:'소방위', name:'김영진'},
+    {id:'MP-005', org:'119구조대', rank:'소방교', name:'윤동환'},
+    {id:'MP-006', org:'119구조대', rank:'소방교', name:'강덕관'},
+    {id:'MP-007', org:'119구조대', rank:'소방위', name:'박재형', role:'부대장'},
+    {id:'MP-008', org:'119구조대', rank:'소방장', name:'윤동인'},
+    {id:'MP-009', org:'119구조대', rank:'소방교', name:'류민수'},
+    {id:'MP-010', org:'119구조대', rank:'소방교', name:'이창현'},
+    {id:'MP-011', org:'119구조대', rank:'소방교', name:'김성건'},
+    {id:'MP-012', org:'119구조대', rank:'소방위', name:'김명환', role:'부대장'},
+    {id:'MP-013', org:'119구조대', rank:'소방장', name:'문비호'},
+    {id:'MP-014', org:'119구조대', rank:'소방장', name:'임성류'},
+    {id:'MP-015', org:'119구조대', rank:'소방교', name:'안다헌'},
+    {id:'MP-016', org:'119구조대', rank:'소방사', name:'김민기'},
+    {id:'MP-017', org:'호남119안전센터', rank:'소방경', name:'홍경현', role:'센터장'},
+    {id:'MP-018', org:'호남119안전센터', rank:'소방경', name:'김남식', role:'팀장'},
+    {id:'MP-019', org:'호남119안전센터', rank:'소방위', name:'박병진'},
+    {id:'MP-020', org:'호남119안전센터', rank:'소방교', name:'박소윤'},
+    {id:'MP-021', org:'호남119안전센터', rank:'소방교', name:'이진우'},
+    {id:'MP-022', org:'호남119안전센터', rank:'소방교', name:'조지민'},
+    {id:'MP-023', org:'호남119안전센터', rank:'소방위', name:'이영록', role:'팀장'},
+    {id:'MP-024', org:'호남119안전센터', rank:'소방장', name:'김정명'},
+    {id:'MP-025', org:'호남119안전센터', rank:'소방장', name:'주승현'},
+    {id:'MP-026', org:'호남119안전센터', rank:'소방교', name:'이현규'},
+    {id:'MP-027', org:'호남119안전센터', rank:'소방위', name:'위성현', role:'팀장'},
+    {id:'MP-028', org:'호남119안전센터', rank:'소방장', name:'김태영'},
+    {id:'MP-029', org:'호남119안전센터', rank:'소방교', name:'이승엽'},
+    {id:'MP-030', org:'호남119안전센터', rank:'소방교', name:'진영균'},
+    {id:'MP-031', org:'호남구급대', rank:'소방교', name:'황성용'},
+    {id:'MP-032', org:'호남구급대', rank:'소방장', name:'고일태'},
+    {id:'MP-033', org:'호남구급대', rank:'소방장', name:'정길현'},
+    {id:'MP-034', org:'호남구급대', rank:'소방장', name:'김진희'},
+    {id:'MP-035', org:'호남구급대', rank:'소방사', name:'김태현'},
+    {id:'MP-036', org:'호남구급대', rank:'소방교', name:'변석환'},
+    {id:'MP-037', org:'호남구급대', rank:'소방교', name:'김종성'},
+    {id:'MP-038', org:'호남구급대', rank:'구급대원', name:'방유진'},
+    {id:'MP-039', org:'호남구급대', rank:'구급대원', name:'최형묵'},
+    {id:'MP-040', org:'호남구급대', rank:'소방교', name:'이상훈'},
+    {id:'MP-041', org:'호남구급대', rank:'소방위', name:'윤종철'},
+    {id:'MP-042', org:'호남구급대', rank:'소방교', name:'이정규'},
+    {id:'MP-043', org:'호남구급대', rank:'소방교', name:'노소영'},
+    {id:'MP-044', org:'호남구급대', rank:'소방교', name:'박선희'},
+    {id:'MP-045', org:'호남구급대', rank:'소방교', name:'구채현'},
+    {id:'MP-046', org:'호남구급대', rank:'소방교', name:'이양훈'},
+    {id:'MP-047', org:'호남구급대', rank:'소방사', name:'안시현'},
+    {id:'MP-048', org:'호남구급대', rank:'소방사', name:'한상열'},
+    {id:'MP-049', org:'연산119안전센터', rank:'소방경', name:'정윤삼', role:'센터장'},
+    {id:'MP-050', org:'연산119안전센터', rank:'소방경', name:'이행선', role:'팀장'},
+    {id:'MP-051', org:'연산119안전센터', rank:'소방교', name:'최정연'},
+    {id:'MP-052', org:'연산119안전센터', rank:'소방교', name:'정의제'},
+    {id:'MP-053', org:'연산119안전센터', rank:'소방교', name:'방은애'},
+    {id:'MP-054', org:'연산119안전센터', rank:'소방사', name:'안정현'},
+    {id:'MP-055', org:'연산119안전센터', rank:'소방위', name:'위훈', role:'팀장'},
+    {id:'MP-056', org:'연산119안전센터', rank:'소방장', name:'장지수'},
+    {id:'MP-057', org:'연산119안전센터', rank:'소방장', name:'고신석'},
+    {id:'MP-058', org:'연산119안전센터', rank:'소방교', name:'정지운'},
+    {id:'MP-059', org:'연산119안전센터', rank:'소방교', name:'최민준'},
+    {id:'MP-060', org:'연산119안전센터', rank:'소방경', name:'김기영', role:'팀장'},
+    {id:'MP-061', org:'연산119안전센터', rank:'소방장', name:'전덕만'},
+    {id:'MP-062', org:'연산119안전센터', rank:'소방교', name:'백정길'},
+    {id:'MP-063', org:'연산119안전센터', rank:'소방교', name:'이태겸'},
+    {id:'MP-064', org:'연산119안전센터', rank:'소방사', name:'김준겸'},
+    {id:'MP-065', org:'연산119안전센터', rank:'소방교', name:'안수창'},
+    {id:'MP-066', org:'연산구급대', rank:'소방교', name:'김현준'},
+    {id:'MP-067', org:'연산구급대', rank:'소방사', name:'최수호'},
+    {id:'MP-068', org:'연산구급대', rank:'소방교', name:'서관주'},
+    {id:'MP-069', org:'연산구급대', rank:'소방장', name:'박남진'},
+    {id:'MP-070', org:'연산구급대', rank:'소방장', name:'정일광'},
+    {id:'MP-071', org:'연산구급대', rank:'소방장', name:'송명준'},
+    {id:'MP-072', org:'연산구급대', rank:'소방교', name:'최은정'},
+    {id:'MP-073', org:'연산구급대', rank:'구급대원', name:'강나연'},
+    {id:'MP-074', org:'연산구급대', rank:'소방사', name:'성현아'},
+    {id:'MP-075', org:'경동119안전센터', rank:'소방경', name:'박종철', role:'센터장'},
+    {id:'MP-076', org:'경동119안전센터', rank:'소방위', name:'최아론', role:'팀장'},
+    {id:'MP-077', org:'경동119안전센터', rank:'소방교', name:'이지용'},
+    {id:'MP-078', org:'경동119안전센터', rank:'소방사', name:'김성귀'},
+    {id:'MP-079', org:'경동119안전센터', rank:'소방위', name:'정광운', role:'팀장'},
+    {id:'MP-080', org:'경동119안전센터', rank:'소방장', name:'서동훈'},
+    {id:'MP-081', org:'경동119안전센터', rank:'소방교', name:'이윤환'},
+    {id:'MP-082', org:'경동119안전센터', rank:'소방위', name:'여규형', role:'팀장'},
+    {id:'MP-083', org:'경동119안전센터', rank:'소방장', name:'김영석'},
+    {id:'MP-084', org:'경동119안전센터', rank:'소방사', name:'김현'},
+    {id:'MP-085', org:'경동구급대', rank:'소방장', name:'전봉찬'},
+    {id:'MP-086', org:'경동구급대', rank:'소방장', name:'정홍석'},
+    {id:'MP-087', org:'경동구급대', rank:'소방교', name:'황일우'},
+    {id:'MP-088', org:'경동구급대', rank:'소방교', name:'조민도'},
+    {id:'MP-089', org:'경동구급대', rank:'소방사', name:'김광용'},
+    {id:'MP-090', org:'경동구급대', rank:'소방사', name:'송태호'},
+    {id:'MP-091', org:'삼학119안전센터', rank:'소방경', name:'제갈대수', role:'센터장'},
+    {id:'MP-092', org:'삼학119안전센터', rank:'소방경', name:'손현준', role:'팀장'},
+    {id:'MP-093', org:'삼학119안전센터', rank:'소방장', name:'정상준'},
+    {id:'MP-094', org:'삼학119안전센터', rank:'소방장', name:'안재용'},
+    {id:'MP-095', org:'삼학119안전센터', rank:'소방장', name:'김재하'},
+    {id:'MP-096', org:'삼학119안전센터', rank:'소방교', name:'박규진'},
+    {id:'MP-097', org:'삼학119안전센터', rank:'소방경', name:'이성진', role:'팀장'},
+    {id:'MP-098', org:'삼학119안전센터', rank:'소방위', name:'박향우'},
+    {id:'MP-099', org:'삼학119안전센터', rank:'소방위', name:'김주현'},
+    {id:'MP-100', org:'삼학119안전센터', rank:'소방장', name:'김재민'},
+    {id:'MP-101', org:'삼학119안전센터', rank:'소방위', name:'문성태', role:'팀장'},
+    {id:'MP-102', org:'삼학119안전센터', rank:'소방장', name:'김창성'},
+    {id:'MP-103', org:'삼학119안전센터', rank:'소방장', name:'조원철'},
+    {id:'MP-104', org:'삼학119안전센터', rank:'소방교', name:'김진열'},
+    {id:'MP-105', org:'삼학119안전센터', rank:'소방교', name:'김민수'},
+    {id:'MP-106', org:'삼학구급대', rank:'소방사', name:'강민수'},
+    {id:'MP-107', org:'삼학구급대', rank:'소방교', name:'송근혁'},
+    {id:'MP-108', org:'삼학구급대', rank:'소방교', name:'하성책'},
+    {id:'MP-109', org:'삼학구급대', rank:'소방교', name:'이동혁'},
+    {id:'MP-110', org:'삼학구급대', rank:'소방위', name:'문연정'},
+    {id:'MP-111', org:'삼학구급대', rank:'소방교', name:'김형남'},
+    {id:'MP-112', org:'삼학구급대', rank:'소방교', name:'정해홍'},
+    {id:'MP-113', org:'삼학구급대', rank:'소방사', name:'김형준'},
+    {id:'MP-114', org:'삼학구급대', rank:'소방교', name:'유진'},
+    {id:'MP-115', org:'하당119안전센터', rank:'소방경', name:'고성관', role:'센터장'},
+    {id:'MP-116', org:'하당119안전센터', rank:'소방경', name:'김길헌', role:'팀장'},
+    {id:'MP-117', org:'하당119안전센터', rank:'소방위', name:'최재선', role:'팀장'},
+    {id:'MP-118', org:'하당119안전센터', rank:'소방위', name:'박해동', role:'팀장'},
+    {id:'MP-119', org:'하당119안전센터', rank:'소방위', name:'주승'},
+    {id:'MP-120', org:'하당119안전센터', rank:'소방위', name:'박찬모'},
+    {id:'MP-121', org:'하당119안전센터', rank:'소방위', name:'최성영'},
+    {id:'MP-122', org:'하당119안전센터', rank:'소방장', name:'김철수'},
+    {id:'MP-123', org:'하당119안전센터', rank:'소방장', name:'이진국'},
+    {id:'MP-124', org:'하당119안전센터', rank:'소방장', name:'이문수'},
+    {id:'MP-125', org:'하당119안전센터', rank:'소방교', name:'강성구'},
+    {id:'MP-126', org:'하당119안전센터', rank:'소방장', name:'김원식'},
+    {id:'MP-127', org:'하당119안전센터', rank:'소방교', name:'박보권'},
+    {id:'MP-128', org:'하당119안전센터', rank:'소방교', name:'김경준'},
+    {id:'MP-129', org:'하당119안전센터', rank:'소방교', name:'손성수'},
+    {id:'MP-130', org:'하당119안전센터', rank:'소방교', name:'오인채'},
+    {id:'MP-131', org:'하당119안전센터', rank:'소방교', name:'이지우'},
+    {id:'MP-132', org:'하당119안전센터', rank:'소방교', name:'채현민'},
+    {id:'MP-133', org:'하당119안전센터', rank:'소방교', name:'김대언'},
+    {id:'MP-134', org:'하당119안전센터', rank:'소방교', name:'정인석'},
+    {id:'MP-135', org:'하당119안전센터', rank:'소방교', name:'박규현'},
+    {id:'MP-136', org:'하당119안전센터', rank:'소방교', name:'윤태웅'},
+    {id:'MP-137', org:'하당119안전센터', rank:'소방교', name:'강병철'},
+    {id:'MP-138', org:'하당119안전센터', rank:'소방사', name:'박주영'},
+    {id:'MP-139', org:'하당119안전센터', rank:'소방교', name:'나성주'},
+    {id:'MP-140', org:'하당119안전센터', rank:'소방교', name:'윤한길'},
+    {id:'MP-141', org:'하당119안전센터', rank:'소방사', name:'강태원'},
+    {id:'MP-142', org:'하당119안전센터', rank:'소방교', name:'김은국'},
+    {id:'MP-143', org:'하당119안전센터', rank:'소방사', name:'박정재'},
+    {id:'MP-144', org:'하당119안전센터', rank:'소방교', name:'김홍건'},
+    {id:'MP-145', org:'하당구급대', rank:'소방교', name:'조주형'},
+    {id:'MP-146', org:'하당구급대', rank:'소방교', name:'임진석'},
+    {id:'MP-147', org:'하당구급대', rank:'소방장', name:'나병수'},
+    {id:'MP-148', org:'하당구급대', rank:'소방교', name:'오유진'},
+    {id:'MP-149', org:'하당구급대', rank:'소방장', name:'정현석'},
+    {id:'MP-150', org:'하당구급대', rank:'소방교', name:'박동현'},
+    {id:'MP-151', org:'하당구급대', rank:'소방사', name:'남승종'},
+    {id:'MP-152', org:'하당구급대', rank:'소방교', name:'박다희'},
+    {id:'MP-153', org:'하당구급대', rank:'소방사', name:'김소현'},
+    {id:'MP-154', org:'하당구급대', rank:'소방장', name:'김유도'},
+    {id:'MP-155', org:'하당구급대', rank:'소방교', name:'박강인'},
+    {id:'MP-156', org:'하당구급대', rank:'소방장', name:'김건우'},
+    {id:'MP-157', org:'하당구급대', rank:'소방장', name:'이승연'},
+    {id:'MP-158', org:'하당구급대', rank:'소방장', name:'김승관'},
+    {id:'MP-159', org:'하당구급대', rank:'소방장', name:'정지은'},
+    {id:'MP-160', org:'하당구급대', rank:'소방교', name:'장형'},
+    {id:'MP-161', org:'하당구급대', rank:'소방사', name:'원소정'},
+    {id:'MP-162', org:'하당구급대', rank:'소방교', name:'박시언'},
+    {id:'MP-163', org:'현장대응단', rank:'소방령', name:'조대성', role:'1단장'},
+    {id:'MP-164', org:'현장대응단', rank:'소방경', name:'김성윤', role:'1팀장'},
+    {id:'MP-165', org:'현장대응단', rank:'소방장', name:'이범석', role:'화재조사'},
+    {id:'MP-166', org:'현장대응단', rank:'소방교', name:'박제영', role:'통신'},
+    {id:'MP-167', org:'현장대응단', rank:'소방장', name:'김민지', role:'서무'},
+    {id:'MP-168', org:'현장대응단', rank:'소방령', name:'이원', role:'2단장'},
+    {id:'MP-169', org:'현장대응단', rank:'소방경', name:'박상민', role:'2팀장'},
+    {id:'MP-170', org:'현장대응단', rank:'소방위', name:'박민정', role:'화재조사'},
+    {id:'MP-171', org:'현장대응단', rank:'소방교', name:'허승준', role:'통신'},
+    {id:'MP-172', org:'현장대응단', rank:'소방교', name:'장용철', role:'서무'},
+    {id:'MP-173', org:'현장대응단', rank:'소방령', name:'김종수', role:'3단장'},
+    {id:'MP-174', org:'현장대응단', rank:'소방경', name:'김유범', role:'3팀장'},
+    {id:'MP-175', org:'현장대응단', rank:'소방교', name:'김미란', role:'화재조사'},
+    {id:'MP-176', org:'현장대응단', rank:'소방교', name:'김재혁', role:'통신'},
+    {id:'MP-177', org:'현장대응단', rank:'소방사', name:'김민규', role:'서무'},
+    {id:'MP-178', org:'현장대응단', rank:'소방장', name:'조명재', role:'일근'},
+    {id:'MP-179', org:'예방안전과', rank:'소방령', name:'이은철', role:'과장'},
+    {id:'MP-180', org:'예방안전과', rank:'소방경', name:'염동부', role:'예방홍보팀장'},
+    {id:'MP-181', org:'예방안전과', rank:'소방위', name:'양시언'},
+    {id:'MP-182', org:'예방안전과', rank:'소방위', name:'박애주'},
+    {id:'MP-183', org:'예방안전과', rank:'소방교', name:'황서린'},
+    {id:'MP-184', org:'예방안전과', rank:'소방교', name:'임성원'},
+    {id:'MP-185', org:'예방안전과', rank:'소방교', name:'김민수'},
+    {id:'MP-186', org:'예방안전과', rank:'소방경', name:'박철오', role:'소방민원팀장'},
+    {id:'MP-187', org:'예방안전과', rank:'소방장', name:'상유진'},
+    {id:'MP-188', org:'예방안전과', rank:'소방교', name:'김호준'},
+    {id:'MP-189', org:'예방안전과', rank:'소방장', name:'국현상'},
+    {id:'MP-190', org:'예방안전과', rank:'소방교', name:'김민우'},
+    {id:'MP-191', org:'예방안전과', rank:'소방경', name:'박경중', role:'화재안전조사팀장'},
+    {id:'MP-192', org:'예방안전과', rank:'소방위', name:'정인섭'},
+    {id:'MP-193', org:'예방안전과', rank:'소방장', name:'김수휘'},
+    {id:'MP-194', org:'예방안전과', rank:'소방교', name:'김경수'},
+    {id:'MP-195', org:'예방안전과', rank:'소방교', name:'조승환'},
+    {id:'MP-196', org:'예방안전과', rank:'소방장', name:'홍보현'},
+    {id:'MP-197', org:'예방안전과', rank:'소방장', name:'황정은'},
+    {id:'MP-198', org:'대응구조과', rank:'소방령', name:'허관수', role:'과장'},
+    {id:'MP-199', org:'대응구조과', rank:'소방경', name:'박근오', role:'현장대응팀장'},
+    {id:'MP-200', org:'대응구조과', rank:'소방장', name:'김도혁'},
+    {id:'MP-201', org:'대응구조과', rank:'소방교', name:'장이주'},
+    {id:'MP-202', org:'대응구조과', rank:'소방경', name:'임명철', role:'구조구급팀장'},
+    {id:'MP-203', org:'대응구조과', rank:'소방위', name:'김재연'},
+    {id:'MP-204', org:'대응구조과', rank:'소방위', name:'송영진'},
+    {id:'MP-205', org:'대응구조과', rank:'소방장', name:'김양균'},
+    {id:'MP-206', org:'소방행정과', rank:'소방령', name:'황종철', role:'과장'},
+    {id:'MP-207', org:'소방행정과', rank:'소방경', name:'조현', role:'소방행정팀장'},
+    {id:'MP-208', org:'소방행정과', rank:'소방위', name:'양승석'},
+    {id:'MP-209', org:'소방행정과', rank:'소방위', name:'최원민'},
+    {id:'MP-210', org:'소방행정과', rank:'소방교', name:'김지수'},
+    {id:'MP-211', org:'소방행정과', rank:'소방사', name:'김성원'},
+    {id:'MP-212', org:'소방행정과', rank:'공무직', name:'이미선'},
+    {id:'MP-213', org:'소방행정과', rank:'소방경', name:'박진형', role:'예산장비팀장'},
+    {id:'MP-214', org:'소방행정과', rank:'소방위', name:'박성태'},
+    {id:'MP-215', org:'소방행정과', rank:'소방장', name:'김용진'},
+    {id:'MP-216', org:'소방행정과', rank:'소방교', name:'김상수'},
+  ];
+  let ROSTER = [];
+  let scanLog = [];
+  const FLOORS = ['지하2층','지하1층','지상1층','지상2층','지상3층'];
+  const ZONES = ['정문(북측)','동측 진입로','서측 진입로','남측 진입로'];
+  const CUSTOM_OPT = '직접입력(수기)';
+  const FLOORS_SEL = [...FLOORS, CUSTOM_OPT];
+  const ZONES_SEL = [...ZONES, CUSTOM_OPT];
+  const TIME_EST_OPTS = [['0','지금'],['5','5분 전'],['10','10분 전'],['15','15분 전'],['20','20분 전']];
+  function selOptions(list, selected){ return list.map(v => `<option ${v===selected?'selected':''}>${v}</option>`).join(''); }
+  function timeEstOptions(selected){ return TIME_EST_OPTS.map(([v,l]) => `<option value="${v}" ${v===selected?'selected':''}>${l}</option>`).join(''); }
+  function airCapOptions(selected){ return ['30','40','50'].map(v => `<option value="${v}" ${v===selected?'selected':''}>${v}분형</option>`).join(''); }
+
+  function showToast(text, variant){
+    let t = document.getElementById('toastMsg');
+    if(!t){ t = document.createElement('div'); t.id='toastMsg'; t.className='toast'; document.body.appendChild(t); }
+    t.textContent = text;
+    t.classList.remove('out','move');
+    if(variant) t.classList.add(variant);
+    t.classList.add('show');
+    clearTimeout(t._timer);
+    t._timer = setTimeout(() => t.classList.remove('show'), 1500);
+  }
+
+  let editingId = null;
+  let editingAct = null;
+  let editingFloor = FLOORS[2];
+  let editingZone = ZONES[0];
+  let editingFloorCustom = '';
+  let editingZoneCustom = '';
+  let editingAirMode = 'new';
+  let editingAirCap = '50';
+  let editingTimeEst = '0';
+  let parOpen = false;
+
+  let pendingIds = new Set();
+  let pendingAssignments = new Map(); // id -> {floor, zone}
+  let batchAirMode = 'new';
+  let batchAirCap = '50';
+  let candOrgFilter = 'all';
+  let bulkExitMode = false;
+  let bulkExitIds = new Set();
+  function orgColor(org){
+    if(org.includes('구조대')) return '#E4002B';
+    if(org.includes('구급대')) return '#2E8B57';
+    if(org.includes('센터')) return '#6B7280';
+    return '#3E5F82';
+  }
+  function orgEmoji(org){
+    if(org.includes('구조대')) return '🪓';
+    if(org.includes('구급대')) return '✚';
+    if(org.includes('센터')) return '🚒';
+    return '🚩';
+  }
+  function roleTag(p){ return p.role ? ` <span class="badge badge-lead">${p.role}</span>` : ''; }
+  function orgRank(org){
+    const orgOrder = [...new Set(ROSTER.map(r => r.org))];
+    const i = orgOrder.indexOf(org);
+    return i === -1 ? orgOrder.length : i;
+  }
+  const INDOOR_ORGS = ['서장실', '예방안전과', '대응구조과', '소방행정과'];
+
+  let API_URL = localStorage.getItem('fireApiUrl') || 'https://script.google.com/macros/s/AKfycbxO-gHukZd2FZ61XkYu16p-MDdsossqKJwHVHmBK04PFQApN3LUmtBC49eJBZk1jqlubg/exec';
+  let CONTROLLER_TAG = localStorage.getItem('fireControllerTag') || '';
+
+  const syncDot = document.getElementById('syncDot');
+  const syncText = document.getElementById('syncText');
+  const apiUrlInput = document.getElementById('apiUrlInput');
+  apiUrlInput.value = API_URL;
+  const controllerTagInput = document.getElementById('controllerTagInput');
+  controllerTagInput.value = CONTROLLER_TAG;
+  document.getElementById('saveControllerTagBtn').addEventListener('click', () => {
+    CONTROLLER_TAG = controllerTagInput.value.trim();
+    localStorage.setItem('fireControllerTag', CONTROLLER_TAG);
+    showToast(CONTROLLER_TAG ? `안전점검관 표시: ${CONTROLLER_TAG}` : '안전점검관 표시 삭제됨', 'move');
+  });
+
+  document.getElementById('saveUrlBtn').addEventListener('click', () => {
+    API_URL = apiUrlInput.value.trim();
+    localStorage.setItem('fireApiUrl', API_URL);
+    fetchAll();
+  });
+  document.getElementById('incidentDateInput').addEventListener('change', render);
+
+  function currentDate(){ return document.getElementById('incidentDateInput').value; }
+  function visibleLog(){ return scanLog.filter(e => e.incidentDate === currentDate()); }
+
+  async function fetchAllOnce(){
+    const res = await fetch(`${API_URL}?_=${Date.now()}`, {cache:'no-store'});
+    const data = await res.json();
+    if(!data || !Array.isArray(data.roster)) throw new Error('형식이 올바르지 않은 응답');
+    return data;
+  }
+
+  let fetchInProgress = false;
+  async function fetchAll(){
+    if(fetchInProgress) return;
+    fetchInProgress = true;
+    try{
+      await fetchAllInner();
+    }finally{
+      fetchInProgress = false;
+    }
+  }
+
+  async function fetchAllInner(){
+    if(!API_URL){
+      if(ROSTER.length === 0){ ROSTER = DEMO_ROSTER; buildRosterUI(); }
+      syncDot.classList.remove('bad');
+      syncDot.style.background = '#BA7517';
+      syncText.textContent = '테스트 모드 · 가상 명단 사용 중 (저장소 미연결, 서버 저장 안 됨)';
+      render();
+      return;
+    }
+    let data = null;
+    let lastErr = null;
+    for(let attempt = 0; attempt < 3; attempt++){
+      try{
+        data = await fetchAllOnce();
+        break;
+      }catch(err){
+        lastErr = err;
+        if(attempt < 2) await new Promise(r => setTimeout(r, 400));
+      }
+    }
+    if(data){
+      ROSTER = data.roster || [];
+      const serverLog = (data.log || []).map(r => ({
+        id:r.id, name:r.name, action:r.action, floor:r.floor, zone:r.zone,
+        time:Number(r.time), source:r.source, estimated: r.estimated===true||r.estimated==='TRUE',
+        airCap: r.airCap, airMode: r.airMode, incidentDate: r.incidentDate, org: r.org, rank: r.rank, controllerTag: r.controllerTag
+      }));
+      // 절대 삭제 없이 추가만: 서버에서 온 기록 중, 이미 화면에 있는 것과 겹치지 않는 것만 더합니다.
+      // 화면에 이미 떠 있는 기록은 이 과정에서 절대 지워지지 않습니다.
+      let addedCount = 0;
+      serverLog.forEach(se => {
+        const isDup = scanLog.some(e => e.id === se.id && e.action === se.action && Math.abs(e.time - se.time) < 60000);
+        if(!isDup){ scanLog.push(se); addedCount++; }
+      });
+      scanLog.sort((a,b)=>a.time-b.time);
+      console.log('[동기화 진단] 서버기록수:', serverLog.length, '새로_추가된것:', addedCount, '현재_전체scanLog:', scanLog.length);
+      syncDot.classList.remove('bad');
+      syncDot.style.background = '';
+      syncText.textContent = '동기화됨 (' + new Date().toLocaleTimeString('ko-KR',{hour:'2-digit',minute:'2-digit',second:'2-digit'}) + ')';
+      if(editingId === null){
+        buildRosterUI();
+        render();
+      }
+    }else{
+      // 3번 다 실패하면, 화면을 지우지 않고 지금 상태를 그대로 유지합니다(깜빡이며 사라지는 것 방지)
+      syncDot.classList.add('bad');
+      syncText.textContent = '동기화 지연 (재시도 중, 화면은 유지됩니다)';
+    }
+  }
+
+  async function pushEvent(evt){
+    evt.incidentDate = currentDate();
+    evt.controllerTag = CONTROLLER_TAG;
+    scanLog.push(evt);
+    render();
+    if(!API_URL) return;
+    const url = `${API_URL}?action=log&data=${strictEncode(JSON.stringify(evt))}`;
+    for(let attempt = 0; attempt < 3; attempt++){
+      try{
+        await fetch(url, {cache:'no-store'});
+        return;
+      }catch(err){
+        if(attempt < 2) await new Promise(r => setTimeout(r, 400));
+      }
+    }
+    // 3번 재시도까지 했다면 서버에 반영됐을 가능성이 높아 별도 알림 없이 넘어갑니다.
+  }
+
+  function personById(id){ return displayRoster().find(p => p.id === id); }
+  function displayRoster(){
+    const seen = new Set(ROSTER.map(p => p.id));
+    const extra = [];
+    visibleLog().forEach(e => {
+      if(!seen.has(e.id)){
+        seen.add(e.id);
+        extra.push({id:e.id, org:e.org || '미등록', rank:e.rank || '-', name:e.name});
+      }
+    });
+    return ROSTER.concat(extra);
+  }
+  function findOrCreateUnlistedId(org, rank, name){
+    const existing = displayRoster().find(p => !ROSTER.find(r=>r.id===p.id) && p.org===org && p.rank===rank && p.name===name);
+    return existing ? existing.id : 'UNL-' + Date.now();
+  }
+
+  // ---------- 무전 입력 폼 ----------
+  const manOrgSel = document.getElementById('manOrg');
+  const manPersonSel = document.getElementById('manPerson');
+  const manPersonRow = document.getElementById('manPersonRow');
+  const manUnlistedRow = document.getElementById('manUnlistedRow');
+
+  let lastBuiltOrgsKey = '';
+  function buildRosterUI(){
+    const orgs = [...new Set(ROSTER.map(p => p.org))];
+    const orgsKey = orgs.join('|');
+    if(orgsKey === lastBuiltOrgsKey){
+      // 소속 목록 자체가 안 바뀌었으면, 사용자가 지금 만지고 있을 수 있는 드롭다운을 굳이 다시 안 만듭니다.
+      updateManPersonOptions();
+      return;
+    }
+    lastBuiltOrgsKey = orgsKey;
+    const prevOrg = manOrgSel.value;
+    manOrgSel.innerHTML = '';
+    orgs.forEach(org => { const o=document.createElement('option'); o.value=org; o.textContent=org; manOrgSel.appendChild(o); });
+    const exceptOpt = document.createElement('option');
+    exceptOpt.value = '__unlisted__'; exceptOpt.textContent = '미등록·타관서 인원 (예외)';
+    manOrgSel.appendChild(exceptOpt);
+    if([...orgs,'__unlisted__'].includes(prevOrg)) manOrgSel.value = prevOrg;
+    toggleManOrgMode();
+    updateManPersonOptions();
+  }
+  function updateManPersonOptions(){
+    const org = manOrgSel.value;
+    const prevVal = manPersonSel.value;
+    manPersonSel.innerHTML = '';
+    ROSTER.filter(p => p.org === org).forEach(p => {
+      const o = document.createElement('option'); o.value = p.id; o.textContent = `${p.rank} · ${p.name}${p.role?' ('+p.role+')':''}`; manPersonSel.appendChild(o);
+    });
+    if(ROSTER.find(p => p.id === prevVal && p.org === org)) manPersonSel.value = prevVal;
+  }
+  function toggleManOrgMode(){
+    const isUnlisted = manOrgSel.value === '__unlisted__';
+    manPersonRow.style.display = isUnlisted ? 'none' : 'block';
+    manUnlistedRow.style.display = isUnlisted ? 'block' : 'none';
+  }
+  manOrgSel.addEventListener('change', () => { toggleManOrgMode(); updateManPersonOptions(); });
+
+  function toggleManCustomRow(){
+    const show = document.getElementById('manFloor').value === CUSTOM_OPT || document.getElementById('manZone').value === CUSTOM_OPT;
+    document.getElementById('manCustomRow').style.display = show ? 'flex' : 'none';
+  }
+  document.getElementById('manFloor').addEventListener('change', toggleManCustomRow);
+  document.getElementById('manZone').addEventListener('change', toggleManCustomRow);
+  function resolveFloorZone(floorVal, zoneVal, floorCustomEl, zoneCustomEl){
+    const floor = floorVal === CUSTOM_OPT ? (floorCustomEl.value.trim() || '미기재') : floorVal;
+    const zone = zoneVal === CUSTOM_OPT ? (zoneCustomEl.value.trim() || '미기재') : zoneVal;
+    return {floor, zone};
+  }
+
+  document.getElementById('manSubmit').addEventListener('click', () => {
+    const isUnlisted = manOrgSel.value === '__unlisted__';
+    let id, person;
+    if(isUnlisted){
+      const org = document.getElementById('manUnlistedOrg').value.trim();
+      const rank = document.getElementById('manUnlistedRank').value.trim();
+      const name = document.getElementById('manUnlistedName').value.trim();
+      if(!org || !rank || !name){ alert('소속·계급·성명을 모두 입력해주세요.'); return; }
+      id = findOrCreateUnlistedId(org, rank, name);
+      person = {id, org, rank, name};
+    }else{
+      id = manPersonSel.value;
+      person = personById(id);
+      if(!person){ alert('명단이 아직 불러와지지 않았습니다. 잠시 후 다시 시도해주세요.'); return; }
+    }
+    const estMin = parseInt(document.getElementById('manTimeEst').value, 10);
+    const time = Date.now() - estMin*60000;
+    if(isCurrentlyIn(id) && !confirm(person.name+'님은 이미 진입 중으로 표시되어 있습니다. 그래도 등록하시겠습니까?')) return;
+    const {floor, zone} = resolveFloorZone(document.getElementById('manFloor').value, document.getElementById('manZone').value, document.getElementById('manFloorCustom'), document.getElementById('manZoneCustom'));
+    const evt = {
+      id, name:person.name, action:'in',
+      floor, zone,
+      time, source:'무전확인', estimated: estMin>0, airCap: document.getElementById('manAirCap').value, airMode:'new'
+    };
+    if(isUnlisted){ evt.org = person.org; evt.rank = person.rank; }
+    pushEvent(evt);
+    showToast(`${person.name}님 진입 처리 완료`);
+  });
+
+  function isCurrentlyIn(id){
+    const evs = visibleLog().filter(e => e.id === id);
+    if(evs.length === 0) return false;
+    const lastAct = evs[evs.length-1].action;
+    return lastAct === 'in' || lastAct === 'move';
+  }
+
+  // ---------- 렌더링 ----------
+  function fmtClock(ts){ const d=new Date(ts); return String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0'); }
+  function fmtElapsed(ms){ ms=Math.max(0,ms); const m=Math.floor(ms/60000), s=Math.floor((ms%60000)/1000); return m+'분 '+s+'초'; }
+  function fmtDurShort(ms){ return Math.round(Math.max(0,ms)/60000)+'분'; }
+  function airLevel(remainMs, totalMs){
+    const pct = totalMs>0 ? remainMs/totalMs*100 : 0;
+    if(pct > 50) return {c:'#639922', label: Math.max(0,Math.round(pct))+'% 남음'};
+    if(pct > 20) return {c:'#BA7517', label: Math.max(0,Math.round(pct))+'% 남음'};
+    return {c:'#A32D2D', label: pct>0 ? Math.round(pct)+'% 남음' : '한도 초과'};
+  }
+  function personCycles(id){
+    const evs = visibleLog().filter(e => e.id === id).sort((a,b) => a.time - b.time);
+    const cycles = []; let cur = null; let prevRemainAtExit = null;
+    evs.forEach(e => {
+      if(e.action === 'in'){
+        const airCapSelected = Number(e.airCap) || 50;
+        const airMode = e.airMode || 'new';
+        const startAirMs = (airMode === 'continue' && prevRemainAtExit !== null) ? prevRemainAtExit : airCapSelected*60000;
+        cur = {enteredAt:e.time, exitedAt:null, floor:e.floor, zone:e.zone, srcIn:e.source, estIn:e.estimated, startAirMs, airMode, airCapSelected};
+        cycles.push(cur);
+      }else if(e.action === 'out' && cur && cur.exitedAt === null){
+        cur.exitedAt = e.time; cur.srcOut = e.source; cur.estOut = e.estimated;
+        const elapsedAtExit = Math.max(0, cur.exitedAt - cur.enteredAt);
+        prevRemainAtExit = Math.max(0, cur.startAirMs - elapsedAtExit);
+      }else if(e.action === 'move' && cur && cur.exitedAt === null){
+        cur.floor = e.floor; cur.zone = e.zone;
+      }
+    });
+    return cycles;
+  }
+  function cumulative(cycles, now){ let s=0; cycles.forEach(c => { s += (c.exitedAt ?? now) - c.enteredAt; }); return s; }
+  function srcBadge(src, est){
+    const cls = src === 'QR' ? 'badge-src-qr' : 'badge-src-manual';
+    const label = src === 'QR' ? 'QR' : (est ? '무전·추정' : '무전확인');
+    return `<span class="badge ${cls}">${label}</span>`;
+  }
+  function sameDay(a, b){
+    const da=new Date(a), db=new Date(b);
+    return da.getFullYear()===db.getFullYear() && da.getMonth()===db.getMonth() && da.getDate()===db.getDate();
+  }
+  function historyStaticHtml(cycles){
+    return cycles.filter(c => c.exitedAt !== null).map((c,i) => {
+      const num = i+1;
+      const exitLabel = sameDay(c.enteredAt, c.exitedAt) ? fmtClock(c.exitedAt) : '익일 '+fmtClock(c.exitedAt);
+      return `<div class="hist-line exit-state">${num}차 ${fmtClock(c.enteredAt)}~${exitLabel} · ${c.floor}·${c.zone} (활동 ${fmtDurShort(c.exitedAt-c.enteredAt)})</div>`;
+    }).join('');
+  }
+  function liveTimerText(enteredAt, num, floor, zone, now){
+    const nowLabel = sameDay(enteredAt, now) ? fmtClock(now) : '익일 '+fmtClock(now);
+    return `${num}차 ${fmtClock(enteredAt)}~진행중(${nowLabel}) · ${floor}·${zone} (${fmtElapsed(now-enteredAt)})`;
+  }
+
+  function actionCellHtml(p, isIn){
+    if(editingId === p.id && editingAct === 'move'){
+      return `
+        <div class="loc-row">
+          <select class="pickerSel efloor" data-id="${p.id}">${selOptions(FLOORS_SEL, editingFloor)}</select>
+          <select class="pickerSel ezone" data-id="${p.id}">${selOptions(ZONES_SEL, editingZone)}</select>
+        </div>
+        ${(editingFloor===CUSTOM_OPT || editingZone===CUSTOM_OPT) ? `<div class="loc-row"><input type="text" class="efloorCustom pickerInput" data-id="${p.id}" placeholder="층 직접 입력" value="${editingFloorCustom}" ${editingFloor!==CUSTOM_OPT?'style="display:none;"':''}><input type="text" class="ezoneCustom pickerInput" data-id="${p.id}" placeholder="구역 직접 입력" value="${editingZoneCustom}" ${editingZone!==CUSTOM_OPT?'style="display:none;"':''}></div>` : ''}
+        <div class="pickerBtnRow"><button class="confirm tone-move-btn" data-id="${p.id}" data-role="confirmMove">확인</button><button data-role="cancel">취소</button></div>
+      `;
+    }
+    if(editingId === p.id && editingAct === 'in'){
+      return `
+        <div class="loc-row">
+          <select class="pickerSel efloor" data-id="${p.id}">${selOptions(FLOORS_SEL, editingFloor)}</select>
+          <select class="pickerSel ezone" data-id="${p.id}">${selOptions(ZONES_SEL, editingZone)}</select>
+        </div>
+        ${(editingFloor===CUSTOM_OPT || editingZone===CUSTOM_OPT) ? `<div class="loc-row"><input type="text" class="efloorCustom pickerInput" data-id="${p.id}" placeholder="층 직접 입력" value="${editingFloorCustom}" ${editingFloor!==CUSTOM_OPT?'style="display:none;"':''}><input type="text" class="ezoneCustom pickerInput" data-id="${p.id}" placeholder="구역 직접 입력" value="${editingZoneCustom}" ${editingZone!==CUSTOM_OPT?'style="display:none;"':''}></div>` : ''}
+        <div class="pickerBtnRow">
+          <button type="button" class="airToggleBtn ${editingAirMode==='new'?'active-in':''}" data-role="airNew">새 통</button>
+          <button type="button" class="airToggleBtn ${editingAirMode==='continue'?'active-out':''}" data-role="airCont">이어서</button>
+        </div>
+        ${editingAirMode==='new' ? `<select class="pickerSel eaircap" data-id="${p.id}">${airCapOptions(editingAirCap)}</select>` : ''}
+        <select class="pickerSel etime" data-id="${p.id}">${timeEstOptions(editingTimeEst)}</select>
+        <div class="pickerBtnRow"><button class="confirm tone-enter-btn" data-id="${p.id}" data-role="confirmIn">확인</button><button data-role="cancel">취소</button></div>
+      `;
+    }
+    if(editingId === p.id && editingAct === 'out'){
+      return `
+        <select class="pickerSel etime" data-id="${p.id}">${timeEstOptions(editingTimeEst)}</select>
+        <div class="pickerBtnRow"><button class="confirm tone-exit-btn" data-id="${p.id}" data-role="confirmOut">확인</button><button data-role="cancel">취소</button></div>
+      `;
+    }
+    if(isIn){
+      return `
+        <div class="pickerBtnRow">
+          <button class="toggleBtn" data-id="${p.id}" data-role="startMove" style="color:var(--navy-2);border-color:var(--navy-2);">위치변경</button>
+          <button class="toggleBtn btn-exit" data-id="${p.id}" data-role="startOut">철수처리</button>
+        </div>
+      `;
+    }
+    return `<button class="toggleBtn btn-enter" data-id="${p.id}" data-role="startIn">재진입처리</button>`;
+  }
+
+  function renderOrgFilterChips(){
+    const box = document.getElementById('orgFilterChips');
+    const orgs = [...new Set(ROSTER.map(p => p.org))].filter(o => !INDOOR_ORGS.includes(o));
+    const chips = ['all', ...orgs];
+    box.innerHTML = chips.map(o => {
+      const label = o === 'all' ? '전체' : o;
+      const active = candOrgFilter === o;
+      const color = o === 'all' ? 'var(--text-muted)' : orgColor(o);
+      return `<button type="button" class="orgChip" data-org="${o}" style="padding:5px 10px;border-radius:14px;font-size:11px;border:1px solid ${active?color:'var(--border)'};background:${active?color:'#fff'};color:${active?'#fff':'var(--text-muted)'};">${label}</button>`;
+    }).join('');
+    box.querySelectorAll('.orgChip').forEach(btn => btn.addEventListener('click', () => { candOrgFilter = btn.dataset.org; render(); }));
+  }
+
+  function renderStickyBar(){
+    const el = document.getElementById('stickyPendingBar');
+    if(!el) return;
+    if(pendingIds.size === 0){ el.innerHTML = ''; return; }
+    el.innerHTML = `<div class="stickyBar"><span>대기중 ${pendingIds.size}명 선택됨</span><a href="#pendingAnchor">이동 →</a></div>`;
+  }
+
+  function renderPendingCandidates(){
+    renderOrgFilterChips();
+    const box = document.getElementById('pendingCandidates');
+    let candidates = ROSTER.filter(p => !isCurrentlyIn(p.id) && !INDOOR_ORGS.includes(p.org));
+    if(candOrgFilter !== 'all') candidates = candidates.filter(p => p.org === candOrgFilter);
+
+    if(candidates.length === 0){
+      box.innerHTML = '<div class="empty">조건에 맞는 대기 등록 가능한 대원이 없습니다.</div>';
+      return;
+    }
+
+    const groups = {};
+    candidates.forEach(p => { if(!groups[p.org]) groups[p.org] = []; groups[p.org].push(p); });
+
+    box.innerHTML = Object.keys(groups).map(org => {
+      const color = orgColor(org);
+      const orgIds = groups[org].map(p => p.id);
+      const allSelected = orgIds.length > 0 && orgIds.every(id => pendingIds.has(id));
+      const btnLabel = allSelected ? '전체해제' : '전체선택';
+      const rows = groups[org].map(p => `
+        <label style="display:flex;align-items:center;gap:8px;padding:6px 0 6px 8px;border-left:3px solid ${color};margin-bottom:2px;font-size:13px;">
+          <input type="checkbox" class="pendChk" data-id="${p.id}" ${pendingIds.has(p.id)?'checked':''}>
+          <span>${p.rank} · ${p.name}${roleTag(p)}</span>
+        </label>
+      `).join('');
+      return `
+        <div style="margin-bottom:12px;">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">
+            <span style="font-size:12px;font-weight:700;color:${color};">${org} (${groups[org].length}명)</span>
+            <button type="button" class="orgSelectAll" data-org="${org}" data-mode="${allSelected?'clear':'select'}" style="border:none;background:none;color:${color};font-size:11px;text-decoration:underline;padding:0;">${btnLabel}</button>
+          </div>
+          ${rows}
+        </div>
+      `;
+    }).join('') + (candidates.length > 6 ? `<div style="text-align:center;margin-top:6px;"><a href="#sec2Top" class="quicknav">위로 ↑</a></div>` : '');
+
+    box.querySelectorAll('.pendChk').forEach(chk => {
+      chk.addEventListener('change', () => {
+        if(chk.checked){
+          pendingIds.add(chk.dataset.id);
+          if(!pendingAssignments.has(chk.dataset.id)) pendingAssignments.set(chk.dataset.id, {floor:FLOORS[2], zone:ZONES[0]});
+        }else{
+          pendingIds.delete(chk.dataset.id);
+          pendingAssignments.delete(chk.dataset.id);
+        }
+        render();
+      });
+    });
+    box.querySelectorAll('.orgSelectAll').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const org = btn.dataset.org;
+        const orgCandidates = ROSTER.filter(p => p.org === org && !isCurrentlyIn(p.id));
+        const allSelectedNow = orgCandidates.length > 0 && orgCandidates.every(p => pendingIds.has(p.id));
+        if(allSelectedNow){
+          orgCandidates.forEach(p => { pendingIds.delete(p.id); pendingAssignments.delete(p.id); });
+        }else{
+          orgCandidates.forEach(p => {
+            pendingIds.add(p.id);
+            if(!pendingAssignments.has(p.id)) pendingAssignments.set(p.id, {floor:FLOORS[2], zone:ZONES[0]});
+          });
+        }
+        render();
+      });
+    });
+  }
+
+  function renderBulkExitBlock(){
+    const el = document.getElementById('bulkExitBlock');
+    const toggleBtn = document.getElementById('bulkExitToggle');
+    toggleBtn.textContent = bulkExitMode ? '👥 일괄철수 모드 끄기' : '👥 일괄철수 모드 (훈련 종료 등)';
+    if(!bulkExitMode){ el.innerHTML = ''; return; }
+
+    const inPeople = displayRoster().filter(p => isCurrentlyIn(p.id));
+    if(inPeople.length === 0){
+      el.innerHTML = '<div class="card" style="border-color:var(--blue);"><div class="empty">현재 진입중인 대원이 없습니다.</div></div>';
+      return;
+    }
+    const groups = {};
+    inPeople.forEach(p => { if(!groups[p.org]) groups[p.org] = []; groups[p.org].push(p); });
+    const rows = Object.keys(groups).map(org => {
+      const color = orgColor(org);
+      const list = groups[org].map(p => `
+        <label style="display:flex;align-items:center;gap:8px;padding:5px 0 5px 8px;border-left:3px solid ${color};margin-bottom:2px;font-size:13px;">
+          <input type="checkbox" class="bulkExitChk" data-id="${p.id}" ${bulkExitIds.has(p.id)?'checked':''}>
+          <span>${p.rank} · ${p.name}${roleTag(p)}</span>
+        </label>`).join('');
+      return `<div style="margin-bottom:8px;"><div style="font-size:12px;font-weight:700;color:${color};margin-bottom:3px;">${org} (${groups[org].length}명)</div>${list}</div>`;
+    }).join('');
+
+    el.innerHTML = `
+      <div class="card" style="border-color:var(--blue);">
+        <div class="field-label" style="margin-top:0;">현재 진입중인 대원 — 철수 처리할 인원 선택</div>
+        ${rows}
+        <button class="btn-primary" id="bulkExitConfirm" style="margin-top:8px;background:var(--blue);">선택 인원 일괄 철수 (${bulkExitIds.size}명)</button>
+      </div>`;
+
+    el.querySelectorAll('.bulkExitChk').forEach(chk => {
+      chk.addEventListener('change', () => {
+        if(chk.checked) bulkExitIds.add(chk.dataset.id); else bulkExitIds.delete(chk.dataset.id);
+        renderBulkExitBlock();
+      });
+    });
+    const confirmBtn = document.getElementById('bulkExitConfirm');
+    if(confirmBtn) confirmBtn.addEventListener('click', async () => {
+      const ids = [...bulkExitIds];
+      bulkExitIds.clear();
+      renderBulkExitBlock();
+      showToast('일괄 철수 처리 중...', 'out');
+      const now = Date.now();
+      let stepIdx = 0;
+      for(const id of ids){
+        const p = personById(id);
+        if(!p) continue;
+        const evt = { id, name:p.name, action:'out', floor:'-', zone:'-', time:now + stepIdx, source:'무전확인', estimated:false, airCap:'', airMode:'' };
+        stepIdx++;
+        if(!ROSTER.find(r=>r.id===id)){ evt.org = p.org; evt.rank = p.rank; }
+        const p1 = pushEvent(evt);
+        showToast(`${p.name}님 철수 완료`, 'out');
+        await p1;
+      }
+      showToast(`${ids.length}명 일괄 철수 처리 완료`, 'out');
+    });
+  }
+
+  function pendingBlockHtml(){
+    if(pendingIds.size === 0) return '';
+    const rows = [...pendingIds].map(id => {
+      const p = personById(id);
+      const label = p ? `${p.rank}·${p.name}${roleTag(p)}` : id;
+      const color = p ? orgColor(p.org) : 'var(--border)';
+      const orgLabel = p ? p.org : '미등록';
+      const a = pendingAssignments.get(id) || {floor:FLOORS[2], zone:ZONES[0], floorCustom:'', zoneCustom:''};
+      const showCustom = a.floor===CUSTOM_OPT || a.zone===CUSTOM_OPT;
+      return `
+        <div style="padding:6px 0 6px 8px;border-left:3px solid ${color};margin-bottom:6px;">
+          <div style="font-size:12px;margin-bottom:4px;"><span style="color:${color};font-weight:700;">${orgLabel}</span> · ${label}</div>
+          <div style="display:flex;gap:5px;">
+            <select class="pickerSel pendFloor" data-id="${id}" style="flex:1;margin-bottom:0;">${selOptions(FLOORS_SEL, a.floor)}</select>
+            <select class="pickerSel pendZone" data-id="${id}" style="flex:1;margin-bottom:0;">${selOptions(ZONES_SEL, a.zone)}</select>
+          </div>
+          ${showCustom ? `<div style="display:flex;gap:5px;margin-top:5px;"><input type="text" class="pendFloorCustom pickerInput" data-id="${id}" placeholder="층 직접 입력" value="${a.floorCustom||''}" style="flex:1;${a.floor!==CUSTOM_OPT?'display:none;':''}"><input type="text" class="pendZoneCustom pickerInput" data-id="${id}" placeholder="구역 직접 입력" value="${a.zoneCustom||''}" style="flex:1;${a.zone!==CUSTOM_OPT?'display:none;':''}"></div>` : ''}
+        </div>
+      `;
+    }).join('');
+    return `
+      <div class="personRow" style="border-color:var(--text-muted);background:#F2F1EE;">
+        <a href="#sec2Top" class="quicknav">출동대 보기 ↑</a>
+        <div class="pname" style="color:var(--text-muted);">대기중 · ${pendingIds.size}명 (각자 층·구역 지정 후 일괄 진입)</div>
+        <div style="margin-top:6px;">${rows}</div>
+        <div class="field-label" style="margin-top:8px;">공기통 (전원 공통)</div>
+        <div class="pickerBtnRow">
+          <button type="button" class="airToggleBtn ${batchAirMode==='new'?'active-in':''}" data-role="batchAirNew">새 통</button>
+          <button type="button" class="airToggleBtn ${batchAirMode==='continue'?'active-out':''}" data-role="batchAirCont">이어서</button>
+        </div>
+        ${batchAirMode==='new' ? `<select class="pickerSel" id="batchAirCap">${airCapOptions(batchAirCap)}</select>` : ''}
+        <button class="btn-primary" data-role="batchConfirm" style="margin-top:6px;"><span class="emojiChip">👥</span> 일괄 진입 (${pendingIds.size}명)</button>
+        <button class="btn-secondary" data-role="batchClearAll" style="margin-top:0;">전체취소</button>
+      </div>
+    `;
+  }
+
+  function wirePendingBlock(){
+    const el = document.getElementById('pendingBlock');
+    el.innerHTML = pendingBlockHtml();
+    el.querySelectorAll('.pendFloor').forEach(s => s.addEventListener('change', () => {
+      const a = pendingAssignments.get(s.dataset.id) || {floor:FLOORS[2], zone:ZONES[0], floorCustom:'', zoneCustom:''};
+      a.floor = s.value; pendingAssignments.set(s.dataset.id, a);
+      wirePendingBlock();
+    }));
+    el.querySelectorAll('.pendZone').forEach(s => s.addEventListener('change', () => {
+      const a = pendingAssignments.get(s.dataset.id) || {floor:FLOORS[2], zone:ZONES[0], floorCustom:'', zoneCustom:''};
+      a.zone = s.value; pendingAssignments.set(s.dataset.id, a);
+      wirePendingBlock();
+    }));
+    el.querySelectorAll('.pendFloorCustom').forEach(inp => inp.addEventListener('input', () => {
+      const a = pendingAssignments.get(inp.dataset.id) || {floor:FLOORS[2], zone:ZONES[0], floorCustom:'', zoneCustom:''};
+      a.floorCustom = inp.value; pendingAssignments.set(inp.dataset.id, a);
+    }));
+    el.querySelectorAll('.pendZoneCustom').forEach(inp => inp.addEventListener('input', () => {
+      const a = pendingAssignments.get(inp.dataset.id) || {floor:FLOORS[2], zone:ZONES[0], floorCustom:'', zoneCustom:''};
+      a.zoneCustom = inp.value; pendingAssignments.set(inp.dataset.id, a);
+    }));
+    const bAirCap = el.querySelector('#batchAirCap'); if(bAirCap) bAirCap.addEventListener('change', () => { batchAirCap = bAirCap.value; });
+    const bAirNew = el.querySelector('[data-role="batchAirNew"]'); if(bAirNew) bAirNew.addEventListener('click', () => { batchAirMode='new'; render(); });
+    const bAirCont = el.querySelector('[data-role="batchAirCont"]'); if(bAirCont) bAirCont.addEventListener('click', () => { batchAirMode='continue'; render(); });
+    const bClearAll = el.querySelector('[data-role="batchClearAll"]');
+    if(bClearAll) bClearAll.addEventListener('click', () => { pendingIds.clear(); pendingAssignments.clear(); render(); });
+    const bConfirm = el.querySelector('[data-role="batchConfirm"]');
+    if(bConfirm) bConfirm.addEventListener('click', async () => {
+      const now = Date.now();
+      const ids = [...pendingIds];
+      const assignments = new Map(pendingAssignments);
+      pendingIds.clear();
+      pendingAssignments.clear();
+      render();
+      showToast(`일괄 진입 처리 중...`, 'move');
+      let stepIdx = 0;
+      for(const id of ids){
+        const p = personById(id);
+        const a = assignments.get(id) || {floor:FLOORS[2], zone:ZONES[0]};
+        const floor = a.floor === CUSTOM_OPT ? ((a.floorCustom||'').trim() || '미기재') : a.floor;
+        const zone = a.zone === CUSTOM_OPT ? ((a.zoneCustom||'').trim() || '미기재') : a.zone;
+        const evt = { id, name:p.name, action:'in', floor, zone, time:now + stepIdx, source:'무전확인', estimated:false, airCap: batchAirMode==='new' ? batchAirCap : '', airMode: batchAirMode };
+        stepIdx++;
+        if(!ROSTER.find(r=>r.id===id)){ evt.org = p.org; evt.rank = p.rank; }
+        const p1 = pushEvent(evt);
+        showToast(`${p.name}님 진입 완료`);
+        await p1;
+      }
+      showToast(`${ids.length}명 일괄 진입 처리 완료`);
+    });
+  }
+
+  function render(){
+    const list = document.getElementById('statusList');
+    list.innerHTML = '';
+    let cIn=0, cOut=0, cWarn=0;
+    const now = Date.now();
+
+    renderPendingCandidates();
+    renderBulkExitBlock();
+    const activeEl = document.activeElement;
+    const skipPendingRebuild = activeEl && (activeEl.classList.contains('pendFloor') || activeEl.classList.contains('pendZone'));
+    if(!skipPendingRebuild) wirePendingBlock();
+    renderStickyBar();
+
+    const roster = displayRoster()
+      .map(p => ({ p, cycles: personCycles(p.id) }))
+      .filter(x => x.cycles.length > 0)
+      .sort((a, b) => b.cycles[0].enteredAt - a.cycles[0].enteredAt);
+
+    if(roster.length === 0){
+      list.innerHTML = '<div class="empty">아직 입력된 대원이 없습니다. 위 1번 폼 또는 QR로 진입 처리하면 여기 표시됩니다.</div>';
+    }
+
+    if(roster.length > 3){
+      const downLink = document.createElement('a');
+      downLink.href = '#sec3Bottom';
+      downLink.className = 'btn-secondary';
+      downLink.style.display = 'block';
+      downLink.style.textAlign = 'center';
+      downLink.style.textDecoration = 'none';
+      downLink.style.marginTop = '0';
+      downLink.style.marginBottom = '10px';
+      downLink.textContent = '↓ 맨 아래로 (가장 오래된 대원 보기)';
+      list.appendChild(downLink);
+    }
+
+    roster.forEach(({p, cycles}) => {
+      const n = cycles.length;
+      const last = cycles[n-1];
+      const isIn = last.exitedAt === null;
+      if(isIn) cIn++; else cOut++;
+
+      const badgeHtml = n>1 ? `<span class="badge badge-warn">${n}차 진입 · 누적 ${fmtDurShort(cumulative(cycles, now))}</span>` : '';
+      let airHtml = '';
+      let liveTimerHtml = '';
+      if(isIn){
+        const totalMs = last.startAirMs;
+        const elapsed = now - last.enteredAt;
+        const remain = totalMs - elapsed;
+        const air = airLevel(remain, totalMs);
+        if(air.c === '#A32D2D') cWarn++;
+        const airModeLabel = last.airMode==='continue' ? '이어서 사용' : '새 통';
+        airHtml = `<div class="liveAirBar" data-entered-at="${last.enteredAt}" data-total-ms="${totalMs}" data-air-mode-label="${airModeLabel}"><div class="airbar" style="margin-top:8px;"><div style="height:100%;width:${Math.max(0,Math.min(100,remain/totalMs*100))}%;background:${air.c};"></div></div><div class="airLabel" style="font-size:12px;color:${air.c};">${air.label} · ${airModeLabel}</div></div>`;
+        liveTimerHtml = `<div class="hist-line enter-state liveTimer" data-entered-at="${last.enteredAt}" data-num="${n}" data-floor="${last.floor}" data-zone="${last.zone}">${liveTimerText(last.enteredAt, n, last.floor, last.zone, now)}</div>`;
+      }
+      const row = document.createElement('div');
+      row.className = 'personRow';
+      row.dataset.pid = p.id;
+      row.style.borderLeft = `4px solid ${orgColor(p.org)}`;
+      row.innerHTML = `
+        <div class="pname">${orgEmoji(p.org)} ${p.name}${roleTag(p)}${badgeHtml}</div>
+        <div class="porg" style="color:${orgColor(p.org)};">${p.org} · ${p.rank}</div>
+        <div style="margin-top:6px;">${historyStaticHtml(cycles)}${liveTimerHtml}</div>
+        ${airHtml}
+        <div style="margin-top:8px;">${actionCellHtml(p, isIn)}</div>
+      `;
+      list.appendChild(row);
+    });
+
+    const bottomAnchor = document.createElement('span');
+    bottomAnchor.id = 'sec3Bottom';
+    list.appendChild(bottomAnchor);
+
+    if(roster.length > 3){
+      const upWrap = document.createElement('a');
+      upWrap.href = '#sec3Top';
+      upWrap.className = 'btn-secondary';
+      upWrap.style.display = 'block';
+      upWrap.style.textAlign = 'center';
+      upWrap.style.textDecoration = 'none';
+      upWrap.textContent = '↑ 맨 위로 (최근 진입 대원 보기)';
+      list.appendChild(upWrap);
+    }
+
+    document.getElementById('statIn').textContent = cIn;
+    document.getElementById('statOut').textContent = cOut;
+    document.getElementById('statWarn').textContent = cWarn;
+
+    list.querySelectorAll('[data-role="startIn"]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        editingId = btn.dataset.id; editingAct = 'in';
+        editingFloor = FLOORS[2]; editingZone = ZONES[0]; editingAirMode = 'new'; editingAirCap = '50'; editingTimeEst = '0';
+        editingFloorCustom = ''; editingZoneCustom = '';
+        render();
+      });
+    });
+    list.querySelectorAll('[data-role="startOut"]').forEach(btn => {
+      btn.addEventListener('click', () => { editingId = btn.dataset.id; editingAct = 'out'; editingTimeEst = '0'; render(); });
+    });
+    list.querySelectorAll('[data-role="startMove"]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const id = btn.dataset.id;
+        const cyc = personCycles(id);
+        const last = cyc[cyc.length-1];
+        editingId = id; editingAct = 'move';
+        editingFloor = last ? last.floor : FLOORS[2];
+        editingZone = last ? last.zone : ZONES[0];
+        editingFloorCustom = ''; editingZoneCustom = '';
+        render();
+      });
+    });
+    list.querySelectorAll('[data-role="cancel"]').forEach(btn => {
+      btn.addEventListener('click', () => { editingId = null; editingAct = null; render(); });
+    });
+    list.querySelectorAll('.efloor').forEach(s => s.addEventListener('change', () => { editingFloor = s.value; render(); }));
+    list.querySelectorAll('.ezone').forEach(s => s.addEventListener('change', () => { editingZone = s.value; render(); }));
+    list.querySelectorAll('.efloorCustom').forEach(inp => inp.addEventListener('input', () => { editingFloorCustom = inp.value; }));
+    list.querySelectorAll('.ezoneCustom').forEach(inp => inp.addEventListener('input', () => { editingZoneCustom = inp.value; }));
+    list.querySelectorAll('.eaircap').forEach(s => s.addEventListener('change', () => { editingAirCap = s.value; }));
+    list.querySelectorAll('.etime').forEach(s => s.addEventListener('change', () => { editingTimeEst = s.value; }));
+    list.querySelectorAll('[data-role="airNew"]').forEach(btn => btn.addEventListener('click', () => { editingAirMode='new'; render(); }));
+    list.querySelectorAll('[data-role="airCont"]').forEach(btn => btn.addEventListener('click', () => { editingAirMode='continue'; render(); }));
+
+    function resolveEditingFloorZone(){
+      const floor = editingFloor === CUSTOM_OPT ? (editingFloorCustom.trim() || '미기재') : editingFloor;
+      const zone = editingZone === CUSTOM_OPT ? (editingZoneCustom.trim() || '미기재') : editingZone;
+      return {floor, zone};
+    }
+
+    list.querySelectorAll('[data-role="confirmMove"]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const id = btn.dataset.id;
+        const p = personById(id);
+        const {floor, zone} = resolveEditingFloorZone();
+        const evt = { id, name:p.name, action:'move', floor, zone, time:Date.now(), source:'무전확인', estimated:false, airCap:'', airMode:'' };
+        if(!ROSTER.find(r=>r.id===id)){ evt.org = p.org; evt.rank = p.rank; }
+        editingId = null; editingAct = null;
+        pushEvent(evt);
+        showToast(`${p.name}님 위치 변경 · ${evt.floor}·${evt.zone}`, 'move');
+      });
+    });
+    list.querySelectorAll('[data-role="confirmIn"]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const id = btn.dataset.id;
+        const p = personById(id);
+        const estMin = parseInt(editingTimeEst, 10);
+        const {floor, zone} = resolveEditingFloorZone();
+        const evt = { id, name:p.name, action:'in', floor, zone, time: Date.now()-estMin*60000, source:'무전확인', estimated: estMin>0, airCap: editingAirMode==='new' ? editingAirCap : '', airMode: editingAirMode };
+        if(!ROSTER.find(r=>r.id===id)){ evt.org = p.org; evt.rank = p.rank; }
+        editingId = null; editingAct = null;
+        pushEvent(evt);
+        showToast(`${p.name}님 진입 처리 완료`);
+      });
+    });
+    list.querySelectorAll('[data-role="confirmOut"]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const id = btn.dataset.id;
+        const p = personById(id);
+        const estMin = parseInt(editingTimeEst, 10);
+        const evt = { id, name:p.name, action:'out', floor:'-', zone:'-', time: Date.now()-estMin*60000, source:'무전확인', estimated: estMin>0, airCap:'', airMode:'' };
+        if(!ROSTER.find(r=>r.id===id)){ evt.org = p.org; evt.rank = p.rank; }
+        editingId = null; editingAct = null;
+        pushEvent(evt);
+        showToast(`${p.name}님 철수 처리 완료`, 'out');
+      });
+    });
+
+    const logCard = document.getElementById('logCard');
+    const vlog = visibleLog();
+    if(vlog.length === 0){ logCard.innerHTML = '<div class="empty">기록 없음</div>'; }
+    else{
+      logCard.innerHTML = '';
+      vlog.slice().reverse().slice(0,30).forEach(e => {
+        const p = personById(e.id);
+        const label = p ? `${orgEmoji(p.org)} ${p.org}·${p.rank}·${p.name}${roleTag(p)}` : e.name;
+        const item = document.createElement('div'); item.className = 'log-item';
+        const timeStr = new Date(e.time).toLocaleTimeString('ko-KR', {hour:'2-digit',minute:'2-digit',second:'2-digit'});
+        item.innerHTML = `<span class="logDesc"><b>${label}</b> · ${e.action==='in'?'진입':(e.action==='out'?'철수':'위치변경')} · ${e.floor}·${e.zone} ${srcBadge(e.source,e.estimated)}${e.controllerTag?` <span class="badge badge-src-manual" style="background:#EFEDE7;color:var(--text-muted);">${e.controllerTag}</span>`:''}</span><span class="logTime">${timeStr}</span>`;
+        logCard.appendChild(item);
+      });
+    }
+
+    if(parOpen) renderParPanel();
+  }
+
+  function buildParHtml(){
+    const now = Date.now();
+    const groups = {};
+    let total = 0;
+    displayRoster().forEach(p => {
+      const cycles = personCycles(p.id);
+      const last = cycles[cycles.length-1];
+      if(last && last.exitedAt === null){
+        total++;
+        const key = `${last.floor} · ${last.zone}`;
+        if(!groups[key]) groups[key] = [];
+        groups[key].push(`${orgEmoji(p.org)} ${p.org}·${p.rank}·${p.name}${roleTag(p)} (${fmtElapsed(now-last.enteredAt)})`);
+      }
+    });
+    if(total === 0) return '<div class="empty">현재 진입 중인 인원이 없습니다.</div>';
+    const stamp = new Date(now).toLocaleTimeString('ko-KR',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
+    return `<div class="note" style="margin-bottom:8px;">총 ${total}명 · ${stamp} 기준</div>` +
+      Object.keys(groups).map(key => `
+        <div class="parGroup">
+          <div class="parGroupHead">${key} · ${groups[key].length}명</div>
+          ${groups[key].map(l => `<div class="hist-line">${l}</div>`).join('')}
+        </div>
+      `).join('');
+  }
+  function renderParPanel(){
+    document.getElementById('parPanel').innerHTML = buildParHtml();
+  }
+
+  function buildLogText(events, scopeLabel){
+    const vlog = events.slice().reverse();
+    let text = `진입대원 종합관제 시스템(EPICS) — 처리 기록 (${scopeLabel})\n생성 시각: ${new Date().toLocaleString('ko-KR')}\n총 ${vlog.length}건\n\n`;
+    text += '─'.repeat(40) + '\n';
+    if(vlog.length === 0){
+      text += '기록 없음\n';
+    }else{
+      vlog.forEach(e => {
+        const p = personById(e.id);
+        const label = p ? `${p.org}·${p.rank}·${p.name}${p.role?'('+p.role+')':''}` : `${e.org?e.org+'·':''}${e.rank?e.rank+'·':''}${e.name}`;
+        const actionLabel = e.action==='in' ? '진입' : (e.action==='out' ? '철수' : '위치변경');
+        const dateStr = new Date(e.time).toLocaleDateString('ko-KR');
+        const timeStr = new Date(e.time).toLocaleTimeString('ko-KR', {hour:'2-digit',minute:'2-digit',second:'2-digit'});
+        const srcLabel = e.source==='QR' ? 'QR' : (e.estimated ? '무전확인(추정)' : '무전확인');
+        const tagLabel = e.controllerTag ? ` [${e.controllerTag}]` : '';
+        text += `${dateStr} ${timeStr}  ${label}  ${actionLabel}  ${e.floor}·${e.zone}  (${srcLabel})${tagLabel}\n`;
+      });
+    }
+    text += '─'.repeat(40) + '\n';
+    return text;
+  }
+  function triggerDownload(text, filename){
+    const blob = new Blob([text], {type:'text/plain;charset=utf-8'});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  }
+  document.getElementById('downloadLogDayBtn').addEventListener('click', () => {
+    const dateStr = currentDate();
+    const text = buildLogText(visibleLog(), `${dateStr} 하루`);
+    triggerDownload(text, `EPICS_처리기록_${dateStr}.txt`);
+  });
+  document.getElementById('downloadLogAllBtn').addEventListener('click', () => {
+    const text = buildLogText(scanLog, '전체 기간');
+    const stamp = new Date().toISOString().slice(0,10);
+    triggerDownload(text, `EPICS_처리기록_전체_${stamp}.txt`);
+  });
+
+  document.getElementById('bulkExitToggle').addEventListener('click', () => {
+    bulkExitMode = !bulkExitMode;
+    if(bulkExitMode){
+      bulkExitIds = new Set(displayRoster().filter(p => isCurrentlyIn(p.id)).map(p => p.id));
+    }else{
+      bulkExitIds.clear();
+    }
+    renderBulkExitBlock();
+  });
+  document.getElementById('parBtn').addEventListener('click', () => {
+    if(parOpen){ parOpen = false; document.getElementById('parPanel').innerHTML = ''; return; }
+    parOpen = true;
+    renderParPanel();
+  });
+  let floatingParOpen = false;
+  document.getElementById('floatingParBtn').addEventListener('click', () => {
+    floatingParOpen = !floatingParOpen;
+    const panel = document.getElementById('floatingParPanel');
+    if(floatingParOpen){
+      panel.innerHTML = buildParHtml();
+      panel.classList.add('show');
+    }else{
+      panel.classList.remove('show');
+    }
+  });
+
+  function tickUpdate(){
+    const now = Date.now();
+    document.querySelectorAll('.liveTimer').forEach(el => {
+      const enteredAt = Number(el.dataset.enteredAt);
+      el.textContent = liveTimerText(enteredAt, el.dataset.num, el.dataset.floor, el.dataset.zone, now);
+    });
+    document.querySelectorAll('.liveAirBar').forEach(wrap => {
+      const enteredAt = Number(wrap.dataset.enteredAt);
+      const totalMs = Number(wrap.dataset.totalMs);
+      const elapsed = now - enteredAt;
+      const remain = totalMs - elapsed;
+      const air = airLevel(remain, totalMs);
+      const bar = wrap.querySelector('.airbar > div');
+      const label = wrap.querySelector('.airLabel');
+      if(bar){ bar.style.width = Math.max(0,Math.min(100,remain/totalMs*100))+'%'; bar.style.background = air.c; }
+      if(label){ label.textContent = `${air.label} · ${wrap.dataset.airModeLabel}`; label.style.color = air.c; }
+    });
+    if(parOpen) renderParPanel();
+    if(floatingParOpen) document.getElementById('floatingParPanel').innerHTML = buildParHtml();
+  }
+
+  setInterval(() => { if(editingId === null) tickUpdate(); }, 1000);
+  setInterval(() => { if(editingId === null) fetchAll(); }, 6000);
+  fetchAll();
+</script>
+
+</body>
+</html>
