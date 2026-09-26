@@ -395,6 +395,11 @@
     return v;
   }
   function visibleLog(){ return scanLog.filter(e => e.incidentDate === currentDate()); }
+  function getResetTime(date){
+    let t = 0;
+    scanLog.forEach(e => { if(e.action === 'reset' && e.incidentDate === date && e.time > t) t = e.time; });
+    return t;
+  }
 
   async function fetchAllOnce(){
     const res = await fetch(`${API_URL}?_=${Date.now()}`, {cache:'no-store'});
@@ -513,7 +518,8 @@
     return {c:'#A32D2D', label: pct>0 ? Math.round(pct)+'% 남음' : '한도 초과'};
   }
   function personCycles(id){
-    const evs = visibleLog().filter(e => e.id === id).sort((a,b) => a.time - b.time);
+    const resetTime = getResetTime(currentDate());
+    const evs = visibleLog().filter(e => e.id === id && e.time >= resetTime).sort((a,b) => a.time - b.time);
     const cycles = []; let cur = null; let prevRemainAtExit = null;
     evs.forEach(e => {
       if(e.action === 'in'){

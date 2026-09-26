@@ -140,6 +140,7 @@
   상황(출동) 일자
   <input type="date" id="incidentDateInput">
   <span id="weekdayLabel" style="font-weight:700;"></span>
+  <span id="liveClock" style="font-weight:700;margin-left:6px;"></span>
   <button id="soloEntryToggle" title="1인 진입입력" aria-label="1인 진입입력">✍️</button>
   <button id="settingsToggle" title="환경설정" aria-label="환경설정">⚙</button>
 </div>
@@ -259,6 +260,10 @@
     if(!v){ el.textContent = ''; return; }
     const d = new Date(v + 'T00:00:00');
     el.textContent = isNaN(d.getTime()) ? '' : `(${WEEKDAY_KR[d.getDay()]})`;
+  }
+  function updateLiveClock(){
+    const el = document.getElementById('liveClock');
+    if(el) el.textContent = new Date().toLocaleTimeString('ko-KR',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
   }
   document.getElementById('incidentDateInput').value = todayStr();
   updateWeekdayLabel();
@@ -604,6 +609,11 @@
     return v;
   }
   function visibleLog(){ return scanLog.filter(e => e.incidentDate === currentDate()); }
+  function getResetTime(date){
+    let t = 0;
+    scanLog.forEach(e => { if(e.action === 'reset' && e.incidentDate === date && e.time > t) t = e.time; });
+    return t;
+  }
 
   async function fetchAllOnce(){
     const res = await fetch(`${API_URL}?_=${Date.now()}`, {cache:'no-store'});
@@ -811,7 +821,8 @@
   });
 
   function isCurrentlyIn(id){
-    const evs = visibleLog().filter(e => e.id === id);
+    const resetTime = getResetTime(currentDate());
+    const evs = visibleLog().filter(e => e.id === id && e.time >= resetTime);
     if(evs.length === 0) return false;
     const lastAct = evs[evs.length-1].action;
     return lastAct === 'in' || lastAct === 'move';
@@ -828,7 +839,8 @@
     return {c:'#A32D2D', label: pct>0 ? Math.round(pct)+'% 남음' : '한도 초과'};
   }
   function personCycles(id){
-    const evs = visibleLog().filter(e => e.id === id).sort((a,b) => a.time - b.time);
+    const resetTime = getResetTime(currentDate());
+    const evs = visibleLog().filter(e => e.id === id && e.time >= resetTime).sort((a,b) => a.time - b.time);
     const cycles = []; let cur = null; let prevRemainAtExit = null;
     evs.forEach(e => {
       if(e.action === 'in'){
@@ -1040,6 +1052,10 @@
       const ids = [...bulkExitIds];
       bulkExitIds.clear();
       renderBulkExitBlock();
+      if(ids.length === 0){
+        showToast('선택된 인원이 없습니다', 'out');
+        return;
+      }
       showToast('일괄 철수 처리 중...', 'out');
       const now = Date.now();
       let stepIdx = 0;
@@ -1055,7 +1071,13 @@
         bulkExitHiddenIds.add(id);
         render();
       }
-      showToast(`${ids.length}명 일괄 철수 처리 완료`, 'out');
+      if(ids.length > 0){
+        const resetEvt = { id:'SYSTEM', name:'시스템', action:'reset', floor:'-', zone:'-', time:Date.now(), source:'일괄철수초기화', estimated:false, airCap:'', airMode:'' };
+        await pushEvent(resetEvt);
+        bulkExitHiddenIds.clear();
+        render();
+        showToast(`${ids.length}명 일괄 철수 처리 완료 · 화면 초기화됨 (처리기록은 유지)`, 'out');
+      }
     });
   }
 
@@ -1327,11 +1349,15 @@
     else{
       logCard.innerHTML = '';
       vlog.slice().reverse().slice(0,30).forEach(e => {
-        const p = personById(e.id);
-        const label = p ? `${orgEmoji(p.org)} ${p.org}·${p.rank}·${p.name}${roleTag(p)}` : e.name;
-        const item = document.createElement('div'); item.className = 'log-item';
         const timeStr = new Date(e.time).toLocaleTimeString('ko-KR', {hour:'2-digit',minute:'2-digit',second:'2-digit'});
-        item.innerHTML = `<span class="logDesc"><b>${label}</b> · ${e.action==='in'?'진입':(e.action==='out'?'철수':'위치변경')} · ${e.floor}·${e.zone} ${srcBadge(e.source,e.estimated)}${e.controllerTag?` <span class="badge badge-src-manual" style="background:#EFEDE7;color:var(--text-muted);">${e.controllerTag}</span>`:''}</span><span class="logTime">${timeStr}</span>`;
+        const item = document.createElement('div'); item.className = 'log-item';
+        if(e.action === 'reset'){
+          item.innerHTML = `<span class="logDesc"><b>⚠ 전체 현황 초기화</b> · 일괄철수 완료 후 화면 리셋 (기존 기록은 아래 계속 유지됨)</span><span class="logTime">${timeStr}</span>`;
+        }else{
+          const p = personById(e.id);
+          const label = p ? `${orgEmoji(p.org)} ${p.org}·${p.rank}·${p.name}${roleTag(p)}` : e.name;
+          item.innerHTML = `<span class="logDesc"><b>${label}</b> · ${e.action==='in'?'진입':(e.action==='out'?'철수':'위치변경')} · ${e.floor}·${e.zone} ${srcBadge(e.source,e.estimated)}${e.controllerTag?` <span class="badge badge-src-manual" style="background:#EFEDE7;color:var(--text-muted);">${e.controllerTag}</span>`:''}</span><span class="logTime">${timeStr}</span>`;
+        }
         logCard.appendChild(item);
       });
     }
@@ -1375,11 +1401,15 @@
       text += '기록 없음\n';
     }else{
       vlog.forEach(e => {
+        const dateStr = new Date(e.time).toLocaleDateString('ko-KR');
+        const timeStr = new Date(e.time).toLocaleTimeString('ko-KR', {hour:'2-digit',minute:'2-digit',second:'2-digit'});
+        if(e.action === 'reset'){
+          text += `${dateStr} ${timeStr}  [전체 현황 초기화] 일괄철수 완료 후 화면 리셋\n`;
+          return;
+        }
         const p = personById(e.id);
         const label = p ? `${p.org}·${p.rank}·${p.name}${p.role?'('+p.role+')':''}` : `${e.org?e.org+'·':''}${e.rank?e.rank+'·':''}${e.name}`;
         const actionLabel = e.action==='in' ? '진입' : (e.action==='out' ? '철수' : '위치변경');
-        const dateStr = new Date(e.time).toLocaleDateString('ko-KR');
-        const timeStr = new Date(e.time).toLocaleTimeString('ko-KR', {hour:'2-digit',minute:'2-digit',second:'2-digit'});
         const srcLabel = e.source==='QR' ? 'QR' : (e.estimated ? '무전확인(추정)' : '무전확인');
         const tagLabel = e.controllerTag ? ` [${e.controllerTag}]` : '';
         text += `${dateStr} ${timeStr}  ${label}  ${actionLabel}  ${e.floor}·${e.zone}  (${srcLabel})${tagLabel}\n`;
@@ -1458,6 +1488,7 @@
     if(parOpen) renderParPanel();
     if(floatingParOpen) document.getElementById('floatingParPanel').innerHTML = buildParHtml();
     updateSyncStatus();
+    updateLiveClock();
   }
 
   setInterval(() => { if(editingId === null) tickUpdate(); }, 1000);
