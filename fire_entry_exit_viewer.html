@@ -344,6 +344,18 @@
   const syncText = document.getElementById('syncText');
 
   function currentDate(){ return document.getElementById('incidentDateInput').value; }
+  function normalizeIncidentDate(v){
+    if(!v) return v;
+    if(/^\d{4}-\d{2}-\d{2}$/.test(v)) return v;
+    const d = new Date(v);
+    if(!isNaN(d.getTime())){
+      const y = d.getFullYear();
+      const m = String(d.getMonth()+1).padStart(2,'0');
+      const day = String(d.getDate()).padStart(2,'0');
+      return `${y}-${m}-${day}`;
+    }
+    return v;
+  }
   function visibleLog(){ return scanLog.filter(e => e.incidentDate === currentDate()); }
 
   async function fetchAllOnce(){
@@ -387,7 +399,7 @@
       const serverLog = (data.log || []).map(r => ({
         id:r.id, name:r.name, action:r.action, floor:r.floor, zone:r.zone,
         time:Number(r.time), source:r.source, estimated: r.estimated===true||r.estimated==='TRUE',
-        airCap: r.airCap, airMode: r.airMode, incidentDate: r.incidentDate, org: r.org, rank: r.rank
+        airCap: r.airCap, airMode: r.airMode, incidentDate: normalizeIncidentDate(r.incidentDate), org: r.org, rank: r.rank
       }));
       serverLog.forEach(se => {
         const isDup = scanLog.some(e => e.id === se.id && e.action === se.action && Math.abs(e.time - se.time) < 60000);
