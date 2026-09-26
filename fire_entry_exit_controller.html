@@ -2200,7 +2200,7 @@
   }
 
   setInterval(() => { if(editingId === null) tickUpdate(); }, 1000);
-  setInterval(() => { if(editingId === null) fetchAll(); }, 6000);
+  setInterval(fetchAll, 3000);
   fetchAll();
 </script>
 
