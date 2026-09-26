@@ -14,21 +14,21 @@
   }
   *{box-sizing:border-box;}
   html{scroll-behavior:smooth;}
-  .quicknav{display:inline-flex;align-items:center;gap:4px;font-size:12px;font-weight:700;color:var(--navy);background:#EAF0F6;border:1px solid #C7D5E5;padding:6px 14px;border-radius:16px;text-decoration:none;margin-bottom:12px;}
+  .quicknav{display:inline-flex;align-items:center;gap:4px;font-size:13px;font-weight:800;color:#fff;background:var(--navy);border:1px solid var(--navy);padding:8px 16px;border-radius:16px;text-decoration:none;margin-bottom:12px;box-shadow:0 2px 6px rgba(27,58,95,0.35);}
   .scrollTopBtn{position:fixed;right:16px;bottom:16px;width:44px;height:44px;border-radius:50%;background:rgba(27,58,95,0.55);color:rgba(255,255,255,0.9);display:flex;align-items:center;justify-content:center;font-size:18px;box-shadow:0 2px 8px rgba(0,0,0,0.2);z-index:60;text-decoration:none;border:1px solid rgba(255,255,255,0.4);backdrop-filter:blur(2px);}
   .scrollLogBtn{bottom:66px;font-size:17px;}
   .scrollParBtn{bottom:116px;font-size:12px;font-weight:800;letter-spacing:0.3px;background:rgba(163,45,45,0.6);}
   .floatingParPanel{display:none;position:fixed;right:16px;bottom:166px;left:16px;max-width:480px;margin:0 auto;max-height:55vh;overflow-y:auto;background:#fff;border:1px solid var(--border);border-radius:12px;padding:14px;box-shadow:0 6px 24px rgba(0,0,0,0.3);z-index:70;}
   .floatingParPanel.show{display:block;}
   .stickyBar{position:static;background:var(--navy);color:#fff;padding:10px 14px;border-radius:10px;margin:0 0 12px;font-size:13px;font-weight:700;display:flex;justify-content:space-between;align-items:center;}
-  .stickyBar a{color:#fff;text-decoration:none;background:rgba(255,255,255,0.18);padding:6px 12px;border-radius:14px;font-size:12px;white-space:nowrap;}
+  .stickyBar a{color:var(--navy);text-decoration:none;background:var(--amber);padding:7px 14px;border-radius:14px;font-size:13px;font-weight:800;white-space:nowrap;box-shadow:0 2px 6px rgba(0,0,0,0.25);}
   body{margin:0;font-family:'Pretendard', -apple-system, BlinkMacSystemFont, sans-serif;background:var(--bg);color:var(--text);padding-bottom:40px;}
   header{background:var(--navy);color:#fff;padding:16px 18px;}
   header h1{margin:0;font-size:16px;font-weight:800;line-height:1.35;text-align:left;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
   .h1epics{font-weight:800;}
   .h1sub{font-size:11.5px;font-weight:600;color:#C7D2DE;margin-top:4px;text-align:left;letter-spacing:0.2px;}
   header p{margin:4px 0 0;font-size:12px;color:#C7D2DE;}
-  .syncdot{display:inline-block;width:7px;height:7px;border-radius:50%;margin-right:5px;background:#639922;}
+  .syncdot{display:inline-block;width:7px;height:7px;border-radius:50%;margin-right:5px;background:#1E7A34;}
   .syncdot.bad{background:#A32D2D;}
   .dateBar{background:#0F2A47;color:#fff;padding:10px 18px;display:flex;align-items:center;gap:10px;font-size:13px;}
   .dateBar input{padding:6px 8px;border-radius:6px;border:none;font-family:inherit;font-size:13px;}
@@ -115,6 +115,7 @@
   .personRow{border:1px solid var(--border);border-radius:10px;padding:12px;margin-bottom:10px;}
   .personRow .pname{font-weight:700;font-size:14px;}
   .personRow .porg{font-size:11px;color:var(--text-muted);margin-top:2px;}
+  .personRow.air-critical{border-color:var(--red);border-width:2px;background:#FDECEC;box-shadow:0 0 0 2px rgba(163,45,45,0.2);}
   .toast{position:fixed;top:14px;left:50%;transform:translateX(-50%);background:var(--red);color:#fff;padding:10px 18px;border-radius:8px;font-size:13px;font-weight:700;z-index:999;opacity:0;transition:opacity .2s;pointer-events:none;max-width:90vw;text-align:center;}
   .toast.show{opacity:1;}
   .toast.out{background:var(--blue);}
@@ -138,6 +139,7 @@
 <div class="dateBar">
   상황(출동) 일자
   <input type="date" id="incidentDateInput">
+  <span id="weekdayLabel" style="font-weight:700;"></span>
   <button id="soloEntryToggle" title="1인 진입입력" aria-label="1인 진입입력">✍️</button>
   <button id="settingsToggle" title="환경설정" aria-label="환경설정">⚙</button>
 </div>
@@ -249,7 +251,17 @@
   function strictEncode(str){
     return encodeURIComponent(str).replace(/[!'()*]/g, c => '%' + c.charCodeAt(0).toString(16).toUpperCase());
   }
+  const WEEKDAY_KR = ['일','월','화','수','목','금','토'];
+  function updateWeekdayLabel(){
+    const el = document.getElementById('weekdayLabel');
+    const v = document.getElementById('incidentDateInput').value;
+    if(!el) return;
+    if(!v){ el.textContent = ''; return; }
+    const d = new Date(v + 'T00:00:00');
+    el.textContent = isNaN(d.getTime()) ? '' : `(${WEEKDAY_KR[d.getDay()]})`;
+  }
   document.getElementById('incidentDateInput').value = todayStr();
+  updateWeekdayLabel();
   document.getElementById('settingsToggle').addEventListener('click', () => {
     const panel = document.getElementById('settingsPanel');
     panel.style.display = panel.style.display === 'none' ? 'block' : 'none';
@@ -478,7 +490,23 @@
     {id:'MP-216', org:'소방행정과', rank:'소방교', name:'김상수'},
   ];
   let ROSTER = [];
-  let scanLog = [];
+  const SCANLOG_KEY = 'fireScanLog_v1';
+  function pruneOldLog(log){
+    const cutoff = new Date(); cutoff.setDate(cutoff.getDate() - 7);
+    const cutoffStr = cutoff.toISOString().slice(0,10);
+    return (log || []).filter(e => !e.incidentDate || e.incidentDate >= cutoffStr);
+  }
+  function loadScanLogFromStorage(){
+    try{
+      const raw = localStorage.getItem(SCANLOG_KEY);
+      if(!raw) return [];
+      return pruneOldLog(JSON.parse(raw));
+    }catch(e){ return []; }
+  }
+  function saveScanLogToStorage(){
+    try{ localStorage.setItem(SCANLOG_KEY, JSON.stringify(pruneOldLog(scanLog))); }catch(e){}
+  }
+  let scanLog = loadScanLogFromStorage();
   const FLOORS = ['지하2층','지하1층','지상1층','지상2층','지상3층'];
   const ZONES = ['정문(북측)','동측 진입로','서측 진입로','남측 진입로'];
   const CUSTOM_OPT = '직접입력(수기)';
@@ -518,6 +546,7 @@
   let candOrgFilter = 'all';
   let bulkExitMode = false;
   let bulkExitIds = new Set();
+  let bulkExitHiddenIds = new Set();
   function orgColor(org){
     if(org.includes('구조대')) return '#E4002B';
     if(org.includes('구급대')) return '#2E8B57';
@@ -540,6 +569,7 @@
 
   let API_URL = localStorage.getItem('fireApiUrl') || 'https://script.google.com/macros/s/AKfycbx3fsKQffSRrc1iZ-yBlek5w4Oxov3eYtUYHsHjmH0dNjJcSnXjctGnsDAvnETPYhmDyA/exec';
   let CONTROLLER_TAG = localStorage.getItem('fireControllerTag') || '';
+  let lastSyncTime = null;
 
   const syncDot = document.getElementById('syncDot');
   const syncText = document.getElementById('syncText');
@@ -558,7 +588,7 @@
     localStorage.setItem('fireApiUrl', API_URL);
     fetchAll();
   });
-  document.getElementById('incidentDateInput').addEventListener('change', render);
+  document.getElementById('incidentDateInput').addEventListener('change', () => { updateWeekdayLabel(); render(); });
 
   function currentDate(){ return document.getElementById('incidentDateInput').value; }
   function normalizeIncidentDate(v){
@@ -628,18 +658,36 @@
         if(!isDup){ scanLog.push(se); addedCount++; }
       });
       scanLog.sort((a,b)=>a.time-b.time);
+      saveScanLogToStorage();
       console.log('[동기화 진단] 서버기록수:', serverLog.length, '새로_추가된것:', addedCount, '현재_전체scanLog:', scanLog.length);
-      syncDot.classList.remove('bad');
-      syncDot.style.background = '';
-      syncText.textContent = '동기화됨 (' + new Date().toLocaleTimeString('ko-KR',{hour:'2-digit',minute:'2-digit',second:'2-digit'}) + ')';
+      lastSyncTime = Date.now();
+      updateSyncStatus();
       if(editingId === null){
         buildRosterUI();
         render();
       }
     }else{
       // 3번 다 실패하면, 화면을 지우지 않고 지금 상태를 그대로 유지합니다(깜빡이며 사라지는 것 방지)
+      updateSyncStatus();
+    }
+  }
+
+  function updateSyncStatus(){
+    if(!API_URL) return;
+    if(lastSyncTime === null){
       syncDot.classList.add('bad');
-      syncText.textContent = '동기화 지연 (재시도 중, 화면은 유지됩니다)';
+      syncText.textContent = '동기화 대기 중';
+      return;
+    }
+    const secAgo = Math.floor((Date.now() - lastSyncTime) / 1000);
+    const timeLabel = new Date(lastSyncTime).toLocaleTimeString('ko-KR',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
+    if(secAgo < 20){
+      syncDot.classList.remove('bad');
+      syncDot.style.background = '';
+      syncText.textContent = `동기화됨 (${timeLabel})`;
+    }else{
+      syncDot.classList.add('bad');
+      syncText.textContent = `동기화 지연 · 마지막 성공 ${timeLabel} (재시도 중)`;
     }
   }
 
@@ -647,6 +695,7 @@
     evt.incidentDate = currentDate();
     evt.controllerTag = CONTROLLER_TAG;
     scanLog.push(evt);
+    saveScanLogToStorage();
     render();
     if(!API_URL) return;
     const url = `${API_URL}?action=log&data=${strictEncode(JSON.stringify(evt))}`;
@@ -1003,6 +1052,8 @@
         const p1 = pushEvent(evt);
         showToast(`${p.name}님 철수 완료`, 'out');
         await p1;
+        bulkExitHiddenIds.add(id);
+        render();
       }
       showToast(`${ids.length}명 일괄 철수 처리 완료`, 'out');
     });
@@ -1113,6 +1164,12 @@
     const roster = displayRoster()
       .map(p => ({ p, cycles: personCycles(p.id) }))
       .filter(x => x.cycles.length > 0)
+      .filter(x => {
+        const last = x.cycles[x.cycles.length - 1];
+        const isIn = last.exitedAt === null;
+        if(isIn){ bulkExitHiddenIds.delete(x.p.id); return true; }
+        return !bulkExitHiddenIds.has(x.p.id);
+      })
       .sort((a, b) => b.cycles[0].enteredAt - a.cycles[0].enteredAt);
 
     if(roster.length === 0){
@@ -1141,18 +1198,19 @@
       const badgeHtml = n>1 ? `<span class="badge badge-warn">${n}차 진입 · 누적 ${fmtDurShort(cumulative(cycles, now))}</span>` : '';
       let airHtml = '';
       let liveTimerHtml = '';
+      let air = null;
       if(isIn){
         const totalMs = last.startAirMs;
         const elapsed = now - last.enteredAt;
         const remain = totalMs - elapsed;
-        const air = airLevel(remain, totalMs);
+        air = airLevel(remain, totalMs);
         if(air.c === '#A32D2D') cWarn++;
         const airModeLabel = last.airMode==='continue' ? '이어서 사용' : '새 통';
         airHtml = `<div class="liveAirBar" data-entered-at="${last.enteredAt}" data-total-ms="${totalMs}" data-air-mode-label="${airModeLabel}"><div class="airbar" style="margin-top:8px;"><div style="height:100%;width:${Math.max(0,Math.min(100,remain/totalMs*100))}%;background:${air.c};"></div></div><div class="airLabel" style="font-size:12px;color:${air.c};">${air.label} · ${airModeLabel}</div></div>`;
         liveTimerHtml = `<div class="hist-line enter-state liveTimer" data-entered-at="${last.enteredAt}" data-num="${n}" data-floor="${last.floor}" data-zone="${last.zone}">${liveTimerText(last.enteredAt, n, last.floor, last.zone, now)}</div>`;
       }
       const row = document.createElement('div');
-      row.className = 'personRow';
+      row.className = 'personRow' + (isIn && air && air.c === '#A32D2D' ? ' air-critical' : '');
       row.dataset.pid = p.id;
       row.style.borderLeft = `4px solid ${orgColor(p.org)}`;
       row.innerHTML = `
@@ -1394,9 +1452,12 @@
       const label = wrap.querySelector('.airLabel');
       if(bar){ bar.style.width = Math.max(0,Math.min(100,remain/totalMs*100))+'%'; bar.style.background = air.c; }
       if(label){ label.textContent = `${air.label} · ${wrap.dataset.airModeLabel}`; label.style.color = air.c; }
+      const row = wrap.closest('.personRow');
+      if(row) row.classList.toggle('air-critical', air.c === '#A32D2D');
     });
     if(parOpen) renderParPanel();
     if(floatingParOpen) document.getElementById('floatingParPanel').innerHTML = buildParHtml();
+    updateSyncStatus();
   }
 
   setInterval(() => { if(editingId === null) tickUpdate(); }, 1000);
