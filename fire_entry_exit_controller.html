@@ -408,6 +408,43 @@
     transform:translateX(2px);
   }
 
+  /* =========================================================
+     상황 종료 확인 배너 (진입중 0명이 되면 노출)
+     ========================================================= */
+  @keyframes allClearGlow{
+    0%, 100%{box-shadow:0 6px 16px rgba(217,119,6,0.28), inset 0 1px 0 rgba(255,255,255,0.25);}
+    50%{box-shadow:0 8px 22px rgba(217,119,6,0.45), inset 0 1px 0 rgba(255,255,255,0.35);}
+  }
+  .allClearBanner{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:10px;
+    background:linear-gradient(135deg, #B45309 0%, #92400E 100%);
+    color:#fff;
+    padding:12px 14px;
+    border-radius:14px;
+    margin-top:10px;
+    font-size:13px;
+    font-weight:800;
+    animation:allClearGlow 2s infinite ease-in-out;
+  }
+  .allClearBanner .msg{line-height:1.4;}
+  .allClearBanner button{
+    flex-shrink:0;
+    background:#fff;
+    color:#92400E;
+    border:none;
+    padding:9px 16px;
+    border-radius:999px;
+    font-family:inherit;
+    font-size:13px;
+    font-weight:900;
+    cursor:pointer;
+    box-shadow:0 2px 8px rgba(0,0,0,0.2);
+  }
+  .allClearBanner button:hover{background:#FFF7ED;}
+
   /* 소속 필터 칩 & 대원 체크박스 리스트 개선 */
   .orgChip{
     padding:7px 13px !important;
@@ -921,6 +958,7 @@
       <div class="stat"><div class="num" id="statOut">0</div><div class="label">철수 완료</div></div>
       <div class="stat"><div class="num" id="statWarn">0</div><div class="label">잔량 경고</div></div>
     </div>
+    <div id="allClearBanner"></div>
     <button class="btn-secondary" id="bulkExitToggle" style="margin-top:8px;">👥 일괄철수 모드 (훈련 종료 등)</button>
     <div id="bulkExitBlock"></div>
     <span id="pendingAnchor"></span>
@@ -1780,13 +1818,17 @@
         render();
       }
       if(ids.length > 0){
-        const resetEvt = { id:'SYSTEM', name:'시스템', action:'reset', floor:'-', zone:'-', time:Date.now(), source:'일괄철수초기화', estimated:false, airCap:'', airMode:'' };
-        await pushEvent(resetEvt);
-        bulkExitHiddenIds.clear();
-        render();
+        await resetBoardForNewSituation('일괄철수초기화');
         showToast(`${ids.length}명 일괄 철수 처리 완료 · 화면 초기화됨 (처리기록은 유지)`, 'out');
       }
     });
+  }
+
+  async function resetBoardForNewSituation(sourceLabel){
+    const resetEvt = { id:'SYSTEM', name:'시스템', action:'reset', floor:'-', zone:'-', time:Date.now(), source:sourceLabel || '상황종료초기화', estimated:false, airCap:'', airMode:'' };
+    await pushEvent(resetEvt);
+    bulkExitHiddenIds.clear();
+    render();
   }
 
   function pendingBlockHtml(){
@@ -1971,6 +2013,21 @@
     document.getElementById('statIn').textContent = cIn;
     document.getElementById('statOut').textContent = cOut;
     document.getElementById('statWarn').textContent = cWarn;
+
+    const allClearEl = document.getElementById('allClearBanner');
+    if(allClearEl){
+      if(cIn === 0 && roster.length > 0){
+        allClearEl.innerHTML = `<span class="msg">⚠ 전원 철수 완료<br>상황이 종료되었으면 눌러 화면을 초기화하세요</span><button id="allClearBtn" type="button">초기화</button>`;
+        const btn = document.getElementById('allClearBtn');
+        if(btn) btn.addEventListener('click', async () => {
+          allClearEl.innerHTML = '';
+          await resetBoardForNewSituation('상황종료초기화');
+          showToast('화면 초기화 완료 · 다음 상황을 준비하세요 (처리기록은 유지)', 'move');
+        });
+      }else{
+        allClearEl.innerHTML = '';
+      }
+    }
 
     list.querySelectorAll('[data-role="startIn"]').forEach(btn => {
       btn.addEventListener('click', () => {
