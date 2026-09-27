@@ -968,8 +968,7 @@
     <span id="pendingAnchor"></span>
     <div id="pendingBlock"></div>
     <div id="statusList"></div>
-    <button class="btn-primary" id="parBtn" style="margin-top:4px;">전원점검(PAR) 요청 표시</button>
-    <button class="btn-secondary" id="downloadParBtn" style="margin-top:8px;">📋 PAR 현황 다운로드 (인터넷 단절 대비)</button>
+    <button class="btn-primary" id="parBtn" style="margin-top:4px;">PAR(위치,인원,상태) 보고</button>
     <div id="parPanel" style="margin-top:10px;"></div>
   </div>
 
@@ -2172,7 +2171,24 @@
       `).join('');
   }
   function renderParPanel(){
-    document.getElementById('parPanel').innerHTML = buildParHtml();
+    const panel = document.getElementById('parPanel');
+    panel.innerHTML = `
+      <div class="parPanelActions" style="display:flex;gap:8px;margin-bottom:8px;">
+        <button class="btn-secondary" id="parDownloadBtn" type="button" style="margin-top:0;flex:1;">📋 PAR 다운로드</button>
+      </div>
+      ${buildParHtml()}
+      <button class="btn-secondary" id="parCloseBtn" type="button" style="margin-top:10px;width:100%;">닫기</button>
+    `;
+    document.getElementById('parDownloadBtn').addEventListener('click', () => {
+      const text = buildParText();
+      const now = new Date();
+      const stamp = localDateStr(now) + '_' + now.toLocaleTimeString('ko-KR',{hour:'2-digit',minute:'2-digit',second:'2-digit'}).replace(/[:\s]/g,'');
+      triggerDownload(text, `EPICS_PAR현황_${stamp}.txt`);
+    });
+    document.getElementById('parCloseBtn').addEventListener('click', () => {
+      parOpen = false;
+      panel.innerHTML = '';
+    });
   }
 
   function buildParText(){
@@ -2253,12 +2269,6 @@
     const text = buildLogText(scanLog, '전체 기간');
     const stamp = localDateStr(new Date());
     triggerDownload(text, `EPICS_처리기록_전체_${stamp}.txt`);
-  });
-  document.getElementById('downloadParBtn').addEventListener('click', () => {
-    const text = buildParText();
-    const now = new Date();
-    const stamp = localDateStr(now) + '_' + now.toLocaleTimeString('ko-KR',{hour:'2-digit',minute:'2-digit',second:'2-digit'}).replace(/[:\s]/g,'');
-    triggerDownload(text, `EPICS_PAR현황_${stamp}.txt`);
   });
 
   document.getElementById('bulkExitToggle').addEventListener('click', () => {

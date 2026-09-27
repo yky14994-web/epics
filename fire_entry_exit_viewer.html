@@ -83,8 +83,7 @@
     <div class="stat"><div class="num" id="statWarn">0</div><div class="label">잔량 경고</div></div>
   </div>
 
-  <button class="btn-secondary" id="parBtn">전원점검(PAR) 장소별 보기</button>
-  <button class="btn-secondary" id="downloadParBtn">📋 PAR 현황 다운로드 (인터넷 단절 대비)</button>
+  <button class="btn-secondary" id="parBtn">PAR(위치,인원,상태) 보고</button>
   <div id="parPanel"></div>
 
   <div id="statusList" style="margin-top:16px;"></div>
@@ -642,7 +641,23 @@
           </div>
         `).join('');
     }
-    panel.innerHTML = `<div class="parPanelCard">${inner}</div>`;
+    panel.innerHTML = `<div class="parPanelCard">
+      <div class="parPanelActions" style="display:flex;gap:8px;margin-bottom:8px;">
+        <button class="btn-secondary" id="parDownloadBtn" type="button" style="margin-top:0;flex:1;">📋 PAR 다운로드</button>
+      </div>
+      ${inner}
+      <button class="btn-secondary" id="parCloseBtn" type="button" style="margin-top:10px;width:100%;">닫기</button>
+    </div>`;
+    document.getElementById('parDownloadBtn').addEventListener('click', () => {
+      const text = buildParText();
+      const n = new Date();
+      const stamp = localDateStr(n) + '_' + n.toLocaleTimeString('ko-KR',{hour:'2-digit',minute:'2-digit',second:'2-digit'}).replace(/[:\s]/g,'');
+      triggerDownload(text, `EPICS_PAR현황_${stamp}.txt`);
+    });
+    document.getElementById('parCloseBtn').addEventListener('click', () => {
+      parOpen = false;
+      panel.innerHTML = '';
+    });
   }
 
   document.getElementById('parBtn').addEventListener('click', () => {
@@ -694,13 +709,6 @@
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
   }
-  document.getElementById('downloadParBtn').addEventListener('click', () => {
-    const text = buildParText();
-    const now = new Date();
-    const stamp = localDateStr(now) + '_' + now.toLocaleTimeString('ko-KR',{hour:'2-digit',minute:'2-digit',second:'2-digit'}).replace(/[:\s]/g,'');
-    triggerDownload(text, `EPICS_PAR현황_${stamp}.txt`);
-  });
-
   setInterval(render, 1000);
   setInterval(fetchAll, 6000);
   fetchAll();
