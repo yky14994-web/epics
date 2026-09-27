@@ -809,6 +809,8 @@
     z-index:70;
   }
   .floatingParPanel.show{display:block;}
+  .floatingParHead{display:flex;justify-content:flex-end;margin-bottom:8px;}
+  .floatingParHead button{margin-top:0;padding:6px 12px;font-size:12px;}
 
   /* 토스트 알림 */
   .toast{
@@ -978,7 +980,10 @@
 
 </div>
 
-<div id="floatingParPanel" class="floatingParPanel"></div>
+<div id="floatingParPanel" class="floatingParPanel">
+  <div class="floatingParHead"><button class="btn-secondary" id="floatingParDownloadBtn" type="button">📋 PAR 다운로드</button></div>
+  <div id="floatingParContent"></div>
+</div>
 <button class="scrollTopBtn scrollParBtn" id="floatingParBtn" title="PAR 신속 확인" aria-label="PAR 신속 확인">PAR</button>
 <a href="#sec4Top" class="scrollTopBtn scrollLogBtn" title="최신 기록으로" aria-label="최신 기록으로">📋</a>
 <a href="#" class="scrollTopBtn" title="맨 위로" aria-label="맨 위로">↑</a>
@@ -2224,7 +2229,7 @@
     return text;
   }
   function triggerDownload(text, filename){
-    const blob = new Blob([text], {type:'text/plain;charset=utf-8'});
+    const blob = new Blob(['﻿' + text], {type:'text/plain;charset=utf-8'});
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
@@ -2270,11 +2275,17 @@
     floatingParOpen = !floatingParOpen;
     const panel = document.getElementById('floatingParPanel');
     if(floatingParOpen){
-      panel.innerHTML = buildParHtml();
+      document.getElementById('floatingParContent').innerHTML = buildParHtml();
       panel.classList.add('show');
     }else{
       panel.classList.remove('show');
     }
+  });
+  document.getElementById('floatingParDownloadBtn').addEventListener('click', () => {
+    const text = buildParText();
+    const now = new Date();
+    const stamp = localDateStr(now) + '_' + now.toLocaleTimeString('ko-KR',{hour:'2-digit',minute:'2-digit',second:'2-digit'}).replace(/[:\s]/g,'');
+    triggerDownload(text, `EPICS_PAR현황_${stamp}.txt`);
   });
 
   function tickUpdate(){
@@ -2297,7 +2308,7 @@
       if(row) row.classList.toggle('air-critical', air.c === '#A32D2D');
     });
     if(parOpen) renderParPanel();
-    if(floatingParOpen) document.getElementById('floatingParPanel').innerHTML = buildParHtml();
+    if(floatingParOpen) document.getElementById('floatingParContent').innerHTML = buildParHtml();
     updateSyncStatus();
     updateLiveClock();
   }
