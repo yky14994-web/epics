@@ -84,6 +84,7 @@
   </div>
 
   <button class="btn-secondary" id="parBtn">전원점검(PAR) 장소별 보기</button>
+  <button class="btn-secondary" id="downloadParBtn">📋 PAR 현황 다운로드 (인터넷 단절 대비)</button>
   <div id="parPanel"></div>
 
   <div id="statusList" style="margin-top:16px;"></div>
@@ -94,7 +95,13 @@
 <a href="#" class="scrollTopBtn" title="맨 위로" aria-label="맨 위로">↑</a>
 
 <script>
-  function todayStr(){ return new Date().toISOString().slice(0,10); }
+  function localDateStr(d){
+    const y = d.getFullYear();
+    const m = String(d.getMonth()+1).padStart(2,'0');
+    const day = String(d.getDate()).padStart(2,'0');
+    return `${y}-${m}-${day}`;
+  }
+  function todayStr(){ return localDateStr(new Date()); }
   const WEEKDAY_KR = ['일','월','화','수','목','금','토'];
   function updateWeekdayLabel(){
     const el = document.getElementById('weekdayLabel');
@@ -347,7 +354,7 @@
   const SCANLOG_KEY = 'fireScanLog_v1';
   function pruneOldLog(log){
     const cutoff = new Date(); cutoff.setDate(cutoff.getDate() - 7);
-    const cutoffStr = cutoff.toISOString().slice(0,10);
+    const cutoffStr = localDateStr(cutoff);
     return (log || []).filter(e => !e.incidentDate || e.incidentDate >= cutoffStr);
   }
   function loadScanLogFromStorage(){
@@ -642,6 +649,56 @@
     if(parOpen){ parOpen = false; document.getElementById('parPanel').innerHTML = ''; return; }
     parOpen = true;
     renderParPanel();
+  });
+
+  function buildParText(){
+    const now = Date.now();
+    const stamp = new Date(now).toLocaleString('ko-KR');
+    const inList = [];
+    const outList = [];
+    displayRoster().forEach(p => {
+      const cycles = personCycles(p.id);
+      if(cycles.length === 0) return;
+      const last = cycles[cycles.length-1];
+      if(last.exitedAt === null){
+        const elapsed = now - last.enteredAt;
+        const totalMs = last.startAirMs;
+        const remain = totalMs - elapsed;
+        const air = airLevel(remain, totalMs);
+        inList.push(`${p.org}·${p.rank}·${p.name}${p.role?'('+p.role+')':''} · 진입 ${new Date(last.enteredAt).toLocaleTimeString('ko-KR',{hour:'2-digit',minute:'2-digit'})} · 경과 ${fmtDurShort(elapsed)} · 공기 ${air.label} · ${last.floor}·${last.zone}`);
+      }else{
+        outList.push(`${p.org}·${p.rank}·${p.name}${p.role?'('+p.role+')':''} · 철수 ${new Date(last.exitedAt).toLocaleTimeString('ko-KR',{hour:'2-digit',minute:'2-digit'})}`);
+      }
+    });
+    let text = `EPICS 진입대원 현황 (PAR)\n생성 시각: ${stamp}\n상황(출동) 일자: ${currentDate()}\n`;
+    text += '─'.repeat(40) + '\n';
+    text += `[진입중] ${inList.length}명\n`;
+    if(inList.length === 0){ text += '없음\n'; }
+    else inList.forEach((l,i) => { text += `${i+1}. ${l}\n`; });
+    text += '─'.repeat(40) + '\n';
+    text += `[철수완료] ${outList.length}명\n`;
+    if(outList.length === 0){ text += '없음\n'; }
+    else outList.forEach((l,i) => { text += `${i+1}. ${l}\n`; });
+    text += '─'.repeat(40) + '\n';
+    text += '※ 인터넷·구글시트 연결 없이도 이 화면(브라우저)에 저장된 최신 데이터로 생성됩니다.\n';
+    return text;
+  }
+  function triggerDownload(text, filename){
+    const blob = new Blob([text], {type:'text/plain;charset=utf-8'});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  }
+  document.getElementById('downloadParBtn').addEventListener('click', () => {
+    const text = buildParText();
+    const now = new Date();
+    const stamp = localDateStr(now) + '_' + now.toLocaleTimeString('ko-KR',{hour:'2-digit',minute:'2-digit',second:'2-digit'}).replace(/[:\s]/g,'');
+    triggerDownload(text, `EPICS_PAR현황_${stamp}.txt`);
   });
 
   setInterval(render, 1000);
