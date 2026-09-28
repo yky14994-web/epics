@@ -104,6 +104,16 @@
     z-index:50;
     box-shadow:0 3px 10px rgba(0,0,0,0.18);
   }
+  .dateBarScroll{
+    display:flex;
+    align-items:center;
+    gap:8px;
+    overflow-x:auto;
+    scrollbar-width:none;
+    min-width:0;
+  }
+  .dateBarScroll::-webkit-scrollbar{display:none;}
+  .dateBarLabel{flex-shrink:0;white-space:nowrap;}
   .dateBar input{
     padding:6px 10px;
     border-radius:8px;
@@ -113,6 +123,7 @@
     font-family:inherit;
     font-size:13px;
     font-weight:700;
+    flex-shrink:0;
   }
   .dateBar input::-webkit-calendar-picker-indicator{
     filter:invert(1);
@@ -125,6 +136,15 @@
     padding:3px 7px;
     border-radius:6px;
     font-size:12px;
+  }
+  .weekdayChip{
+    display:inline-block;
+    font-weight:700;
+    font-size:12px;
+    color:#E2E8F0;
+    background:rgba(255,255,255,0.1);
+    padding:3px 7px;
+    border-radius:6px;
   }
   .dateBar #settingsToggle, .dateBar #soloEntryToggle{
     margin-left:0;
@@ -244,16 +264,26 @@
     letter-spacing:-0.4px;
   }
 
-  /* 카드 공통 */
+  /* 카드 공통 (입체감은 그림자로만 표현 — 테두리 중복 제거) */
   .card{
     background:var(--card);
-    border:1px solid var(--border);
+    border:1px solid rgba(203,213,225,0.5);
     border-radius:16px;
     padding:16px;
     margin-bottom:18px;
     box-shadow:var(--shadow-md);
   }
-  .card.secondary{border-style:dashed;}
+  .card.secondary{border-style:dashed;border-color:var(--border);box-shadow:none;}
+
+  /* 아이콘 시스템 (이모지 대체용 인라인 SVG, 1.75px 스트로크 통일) */
+  .icon{
+    display:inline-block;
+    width:1em;
+    height:1em;
+    vertical-align:-0.15em;
+    flex-shrink:0;
+  }
+  .icon-btn-row{display:inline-flex;align-items:center;gap:6px;justify-content:center;}
 
   /* 폼 요소 */
   .field-label{
@@ -515,9 +545,10 @@
     color:var(--text-muted);
     margin-top:4px;
   }
-  #statIn{color:var(--red);}
-  #statOut{color:var(--blue);}
-  #statWarn{color:var(--red);}
+  /* 0일 때는 중립색, 실제 값이 있을 때만 의미색으로 강조 (JS에서 .has-value 토글) */
+  #statIn.has-value{color:var(--red);}
+  #statOut.has-value{color:var(--blue);}
+  #statWarn.has-value{color:var(--red);}
 
   /* 배지 스타일 */
   .badge{
@@ -875,12 +906,18 @@
   <p><span class="syncdot" id="syncDot"></span><span id="syncText">동기화 대기 중</span></p>
 </header>
 <div class="dateBar">
-  상황(출동) 일자
-  <input type="date" id="incidentDateInput">
-  <span id="weekdayLabel" style="font-weight:700;"></span>
-  <span id="liveClock" style="font-weight:700;margin-left:6px;"></span>
-  <button id="soloEntryToggle" title="1인 진입입력" aria-label="1인 진입입력">✍️</button>
-  <button id="settingsToggle" title="환경설정" aria-label="환경설정">⚙</button>
+  <div class="dateBarScroll">
+    <span class="dateBarLabel">상황(출동) 일자</span>
+    <input type="date" id="incidentDateInput">
+    <span id="weekdayLabel" class="weekdayChip"></span>
+    <span id="liveClock" style="font-weight:700;margin-left:6px;"></span>
+  </div>
+  <button id="soloEntryToggle" title="1인 진입입력" aria-label="1인 진입입력">
+    <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>
+  </button>
+  <button id="settingsToggle" title="환경설정" aria-label="환경설정">
+    <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1Z"/></svg>
+  </button>
 </div>
 
 <div class="wrap">
@@ -963,7 +1000,7 @@
       <div class="stat"><div class="num" id="statWarn">0</div><div class="label">잔량 경고</div></div>
     </div>
     <div id="allClearBanner"></div>
-    <button class="btn-secondary" id="bulkExitToggle" style="margin-top:8px;">👥 일괄철수 모드 (훈련 종료 등)</button>
+    <button class="btn-secondary icon-btn-row" id="bulkExitToggle" style="margin-top:8px;"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg><span>일괄철수 모드 (훈련 종료 등)</span></button>
     <div id="bulkExitBlock"></div>
     <span id="pendingAnchor"></span>
     <div id="pendingBlock"></div>
@@ -974,8 +1011,8 @@
 
   <div class="sectionHeader" id="sec4Top"><div class="sectionNavRow"><a href="#sec2Top" class="sectionNavBtn"><span class="navNum">1</span><span class="navArrow">‹</span></a><div class="sectionNum">3</div><a href="#sec3Top" class="sectionNavBtn"><span class="navNum">2</span><span class="navArrow">›</span></a></div><div class="sectionTitleText">처리 기록 (해당 일자, 최근 순)</div></div>
   <div class="pickerBtnRow" style="margin-bottom:10px;">
-    <button class="btn-secondary" id="downloadLogDayBtn" style="margin-top:0;">📥 오늘 처리기록 내려받기</button>
-    <button class="btn-secondary" id="downloadLogAllBtn" style="margin-top:0;">📥 전체 처리기록 내려받기</button>
+    <button class="btn-secondary icon-btn-row" id="downloadLogDayBtn" style="margin-top:0;"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M3 10h18"/><path d="M8 2v4"/><path d="M16 2v4"/><circle cx="12" cy="15" r="2.2"/></svg><span>오늘 처리기록 내려받기</span></button>
+    <button class="btn-secondary icon-btn-row" id="downloadLogAllBtn" style="margin-top:0;"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M21 8v13H3V8"/><path d="M1 3h22v5H1z"/><path d="M10 12h4"/></svg><span>전체 처리기록 내려받기</span></button>
   </div>
   <div class="card" id="logCard"><div class="empty">기록 없음</div></div>
 
@@ -983,14 +1020,20 @@
 
 <div id="floatingParPanel" class="floatingParPanel">
   <div class="floatingParHead">
-    <button class="btn-secondary" id="floatingParDownloadBtn" type="button">📋 PAR 다운로드</button>
-    <button class="floatingParCloseBtn" id="floatingParCloseBtn" type="button" title="닫기" aria-label="닫기">✕</button>
+    <button class="btn-secondary icon-btn-row" id="floatingParDownloadBtn" type="button"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="M9 15h6"/><path d="M9 18h6"/></svg><span>PAR 다운로드</span></button>
+    <button class="floatingParCloseBtn" id="floatingParCloseBtn" type="button" title="닫기" aria-label="닫기">
+      <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+    </button>
   </div>
   <div id="floatingParContent"></div>
 </div>
 <button class="scrollTopBtn scrollParBtn" id="floatingParBtn" title="PAR 신속 확인" aria-label="PAR 신속 확인">PAR</button>
-<a href="#sec4Top" class="scrollTopBtn scrollLogBtn" title="최신 기록으로" aria-label="최신 기록으로">📋</a>
-<a href="#" class="scrollTopBtn" title="맨 위로" aria-label="맨 위로">↑</a>
+<a href="#sec4Top" class="scrollTopBtn scrollLogBtn" title="최신 기록으로" aria-label="최신 기록으로">
+  <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" style="width:20px;height:20px;"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="M9 15h6"/><path d="M9 18h6"/></svg>
+</a>
+<a href="#" class="scrollTopBtn" title="맨 위로" aria-label="맨 위로">
+  <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:20px;height:20px;"><path d="M12 19V5"/><path d="m5 12 7-7 7 7"/></svg>
+</a>
 
 <script>
   function localDateStr(d){
@@ -1776,7 +1819,8 @@
   function renderBulkExitBlock(){
     const el = document.getElementById('bulkExitBlock');
     const toggleBtn = document.getElementById('bulkExitToggle');
-    toggleBtn.textContent = bulkExitMode ? '👥 일괄철수 모드 끄기' : '👥 일괄철수 모드 (훈련 종료 등)';
+    const bulkExitIcon = '<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>';
+    toggleBtn.innerHTML = bulkExitIcon + '<span>' + (bulkExitMode ? '일괄철수 모드 끄기' : '일괄철수 모드 (훈련 종료 등)') + '</span>';
     if(!bulkExitMode){ el.innerHTML = ''; return; }
 
     const inPeople = displayRoster().filter(p => isCurrentlyIn(p.id));
@@ -1878,7 +1922,7 @@
           <button type="button" class="airToggleBtn ${batchAirMode==='continue'?'active-out':''}" data-role="batchAirCont">이어서</button>
         </div>
         ${batchAirMode==='new' ? `<select class="pickerSel" id="batchAirCap">${airCapOptions(batchAirCap)}</select>` : ''}
-        <button class="btn-primary" data-role="batchConfirm" style="margin-top:6px;"><span class="emojiChip">👥</span> 일괄 진입 (${pendingIds.size}명)</button>
+        <button class="btn-primary icon-btn-row" data-role="batchConfirm" style="margin-top:6px;"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg><span>일괄 진입 (${pendingIds.size}명)</span></button>
         <button class="btn-secondary" data-role="batchClearAll" style="margin-top:0;">전체취소</button>
       </div>
     `;
@@ -2026,9 +2070,15 @@
       list.appendChild(upWrap);
     }
 
-    document.getElementById('statIn').textContent = cIn;
-    document.getElementById('statOut').textContent = cOut;
-    document.getElementById('statWarn').textContent = cWarn;
+    const statInEl = document.getElementById('statIn');
+    const statOutEl = document.getElementById('statOut');
+    const statWarnEl = document.getElementById('statWarn');
+    statInEl.textContent = cIn;
+    statOutEl.textContent = cOut;
+    statWarnEl.textContent = cWarn;
+    statInEl.classList.toggle('has-value', cIn > 0);
+    statOutEl.classList.toggle('has-value', cOut > 0);
+    statWarnEl.classList.toggle('has-value', cWarn > 0);
 
     const allClearEl = document.getElementById('allClearBanner');
     if(allClearEl){
@@ -2174,7 +2224,7 @@
     const panel = document.getElementById('parPanel');
     panel.innerHTML = `
       <div class="parPanelActions" style="display:flex;gap:8px;margin-bottom:8px;">
-        <button class="btn-secondary" id="parDownloadBtn" type="button" style="margin-top:0;flex:1;">📋 PAR 다운로드</button>
+        <button class="btn-secondary icon-btn-row" id="parDownloadBtn" type="button" style="margin-top:0;flex:1;"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="M9 15h6"/><path d="M9 18h6"/></svg><span>PAR 다운로드</span></button>
       </div>
       ${buildParHtml()}
       <button class="btn-secondary" id="parCloseBtn" type="button" style="margin-top:10px;width:100%;">닫기</button>
