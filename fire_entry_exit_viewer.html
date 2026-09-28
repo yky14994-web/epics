@@ -17,24 +17,40 @@
   body{margin:0;font-family:'Nanum Gothic', sans-serif;background:var(--bg);color:var(--text);padding-bottom:40px;}
   button, .btn, .btn-secondary{transition: transform 0.08s ease, opacity 0.08s ease;}
   button:active, .btn:active, .btn-secondary:active{transform: scale(0.95); opacity: 0.75;}
-  header{background:var(--navy);color:#fff;padding:18px 22px;display:flex;justify-content:space-between;align-items:center;}
-  header h1{margin:0;font-size:20px;font-weight:800;line-height:1.35;}
+  header{background:var(--navy);color:#fff;padding:18px 22px;display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:6px 12px;}
+  header h1{margin:0;font-size:20px;font-weight:800;line-height:1.35;min-width:0;}
   .h1sub{display:block;font-size:12.5px;font-weight:600;color:#C7D2DE;margin-top:2px;letter-spacing:0.2px;}
-  .syncdot{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:6px;background:#1E7A34;}
+  .syncdot{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:6px;background:#1E7A34;flex-shrink:0;}
   .syncdot.bad{background:#E24B4A;}
-  .sync{font-size:13px;color:#C7D2DE;}
+  .sync{font-size:13px;color:#C7D2DE;display:flex;align-items:center;flex-shrink:0;}
+
+  /* 아이콘 시스템 (이모지 대체용 인라인 SVG, 1.75px 스트로크 통일) */
+  .icon{display:inline-block;width:1em;height:1em;vertical-align:-0.15em;flex-shrink:0;}
+  .icon-btn-row{display:inline-flex;align-items:center;gap:6px;justify-content:center;}
+  .org-icon{width:15px;height:15px;vertical-align:-2px;margin-right:2px;}
+
   .dateBar{background:#0F2A47;color:#fff;padding:12px 22px;display:flex;align-items:center;gap:12px;font-size:15px;}
-  .dateBar input{padding:8px 10px;border-radius:6px;border:none;font-family:inherit;font-size:15px;}
+  .dateBarScroll{display:flex;align-items:center;gap:10px;overflow-x:auto;scrollbar-width:none;min-width:0;}
+  .dateBarScroll::-webkit-scrollbar{display:none;}
+  .dateBarLabel{flex-shrink:0;white-space:nowrap;}
+  .dateBar input{padding:8px 10px;border-radius:6px;border:none;font-family:inherit;font-size:15px;flex-shrink:0;}
+  #settingsToggle{
+    margin-left:auto;background:rgba(255,255,255,0.14);border:1px solid rgba(255,255,255,0.2);color:#fff;
+    width:34px;height:34px;border-radius:10px;flex-shrink:0;cursor:pointer;
+    display:inline-flex;align-items:center;justify-content:center;
+  }
+  #settingsToggle:hover{background:rgba(255,255,255,0.24);}
   .wrap{max-width:1000px;margin:0 auto;padding:20px;}
   .setup{background:#fff;border:1px solid var(--border);border-radius:12px;padding:16px;margin-bottom:16px;}
   .urlbox{width:100%;padding:10px;border-radius:8px;border:1px solid var(--border);font-size:13px;font-family:monospace;}
   .btn{margin-top:8px;width:100%;padding:10px;border-radius:8px;border:none;background:var(--navy);color:#fff;font-family:inherit;font-size:14px;font-weight:700;}
   .status-grid{display:flex;gap:14px;margin-bottom:20px;}
-  .stat{flex:1;background:#fff;border:1px solid var(--border);border-radius:12px;padding:16px;text-align:center;}
+  .stat{flex:1;background:#fff;border:1px solid var(--border);border-radius:12px;padding:16px;text-align:center;box-shadow:0 1px 3px rgba(27,58,95,0.06);}
   .stat .num{font-size:40px;font-weight:800;color:var(--navy);}
   .stat .label{font-size:14px;color:var(--text-muted);margin-top:4px;}
-  #statIn{color:var(--red);}
-  #statOut{color:var(--blue);}
+  #statIn.has-value{color:var(--red);}
+  #statOut.has-value{color:var(--blue);}
+  #statWarn.has-value{color:var(--red);}
   .badge{font-size:12px;padding:2px 8px;border-radius:6px;display:inline-block;margin-left:6px;}
   .badge-warn{background:#FAEEDA;color:var(--amber);}
   .badge-lead{background:#EAF0F6;color:var(--navy);font-weight:700;}
@@ -43,7 +59,7 @@
   .hist-line{font-size:14px;color:var(--text-muted);margin-top:4px;line-height:1.6;}
   .hist-line.enter-state{color:var(--red);font-weight:700;}
   .hist-line.exit-state{color:var(--blue);}
-  .personRow{background:#fff;border:1px solid var(--border);border-radius:12px;padding:16px;margin-bottom:12px;}
+  .personRow{background:#fff;border:1px solid var(--border);border-radius:12px;padding:16px;margin-bottom:12px;box-shadow:0 1px 3px rgba(27,58,95,0.06);}
   .personRow .pname{font-weight:700;font-size:17px;}
   .personRow .porg{font-size:14px;color:var(--text-muted);margin-top:3px;}
   .personRow.air-critical{border-color:var(--red);border-width:2px;background:#FDECEC;box-shadow:0 0 0 2px rgba(163,45,45,0.2);}
@@ -63,11 +79,15 @@
   <div class="sync"><span class="syncdot" id="syncDot"></span><span id="syncText">동기화 대기 중</span></div>
 </header>
 <div class="dateBar">
-  상황(출동) 일자
-  <input type="date" id="incidentDateInput">
-  <span id="weekdayLabel" style="font-weight:700;"></span>
-  <span id="liveClock" style="font-weight:700;margin-left:8px;"></span>
-  <button id="settingsToggle" title="환경설정" aria-label="환경설정" style="margin-left:auto;background:rgba(255,255,255,0.15);border:none;color:#fff;width:30px;height:30px;border-radius:50%;font-size:15px;flex-shrink:0;">⚙</button>
+  <div class="dateBarScroll">
+    <span class="dateBarLabel">상황(출동) 일자</span>
+    <input type="date" id="incidentDateInput">
+    <span id="weekdayLabel" style="font-weight:700;"></span>
+    <span id="liveClock" style="font-weight:700;"></span>
+  </div>
+  <button id="settingsToggle" title="환경설정" aria-label="환경설정">
+    <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1Z"/></svg>
+  </button>
 </div>
 
 <div class="wrap">
@@ -491,10 +511,11 @@
     return '#3E5F82';
   }
   function orgEmoji(org){
-    if(org.includes('구조대')) return '🪓';
-    if(org.includes('구급대')) return '✚';
-    if(org.includes('센터')) return '🚒';
-    return '🚩';
+    const s = 'class="icon org-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"';
+    if(org.includes('구조대')) return `<svg ${s}><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="3.5"/><path d="M5.1 5.1l3.2 3.2M18.9 5.1l-3.2 3.2M5.1 18.9l3.2-3.2M18.9 18.9l-3.2-3.2"/></svg>`;
+    if(org.includes('구급대')) return `<svg ${s}><circle cx="12" cy="12" r="9"/><path d="M12 8v8M8 12h8"/></svg>`;
+    if(org.includes('센터')) return `<svg ${s}><rect x="4" y="3" width="16" height="18" rx="1.5"/><path d="M9 21v-4h6v4"/><path d="M9 8h.01M15 8h.01M9 12h.01M15 12h.01"/></svg>`;
+    return `<svg ${s}><path d="M5 3v18"/><path d="M5 4h11l-2 4 2 4H5"/></svg>`;
   }
   function roleTag(p){ return p.role ? ` <span class="badge badge-lead">${p.role}</span>` : ''; }
   function orgRank(org){
@@ -596,7 +617,7 @@
       }
       const row = document.createElement('div');
       row.className = 'personRow' + (isIn && air && air.c === '#A32D2D' ? ' air-critical' : '');
-      row.style.borderLeft = `5px solid ${orgColor(p.org)}`;
+      row.style.borderLeft = `3px solid ${orgColor(p.org)}`;
       row.innerHTML = `
         <div class="pname">${orgEmoji(p.org)} ${p.name}${roleTag(p)}${badgeHtml}</div>
         <div class="porg" style="color:${orgColor(p.org)};">${p.org} · ${p.rank}</div>
@@ -609,6 +630,9 @@
     document.getElementById('statIn').textContent = cIn;
     document.getElementById('statOut').textContent = cOut;
     document.getElementById('statWarn').textContent = cWarn;
+    document.getElementById('statIn').classList.toggle('has-value', cIn > 0);
+    document.getElementById('statOut').classList.toggle('has-value', cOut > 0);
+    document.getElementById('statWarn').classList.toggle('has-value', cWarn > 0);
 
     if(parOpen) renderParPanel();
   }
@@ -643,7 +667,7 @@
     }
     panel.innerHTML = `<div class="parPanelCard">
       <div class="parPanelActions" style="display:flex;gap:8px;margin-bottom:8px;">
-        <button class="btn-secondary" id="parDownloadBtn" type="button" style="margin-top:0;flex:1;">📋 PAR 다운로드</button>
+        <button class="btn-secondary icon-btn-row" id="parDownloadBtn" type="button" style="margin-top:0;flex:1;"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="M9 15h6"/><path d="M9 18h6"/></svg><span>PAR 다운로드</span></button>
       </div>
       ${inner}
       <button class="btn-secondary" id="parCloseBtn" type="button" style="margin-top:10px;width:100%;">닫기</button>
